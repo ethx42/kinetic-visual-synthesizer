@@ -10,11 +10,15 @@
 		"check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
 		"lint": "eslint .",
 		"format": "prettier --write .",
+		"test": "vitest",
 		"prepare": "husky"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.39.1",
 		"@sveltejs/vite-plugin-svelte": "^6.2.1",
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/svelte": "^5.2.9",
+		"@testing-library/user-event": "^14.6.1",
 		"@tsconfig/svelte": "^5.0.6",
 		"@types/node": "^24.10.1",
 		"@types/three": "^0.181.0",
@@ -25,6 +29,7 @@
 		"eslint-plugin-svelte": "^3.13.1",
 		"globals": "^16.5.0",
 		"husky": "^9.1.7",
+		"jsdom": "^27.2.0",
 		"lint-staged": "^16.2.7",
 		"prettier": "^3.7.4",
 		"prettier-plugin-svelte": "^3.4.0",
@@ -33,7 +38,8 @@
 		"svelte-eslint-parser": "^1.4.1",
 		"typescript": "~5.9.3",
 		"vite": "^7.2.4",
-		"vite-plugin-glsl": "^1.5.5"
+		"vite-plugin-glsl": "^1.5.5",
+		"vitest": "^4.0.15"
 	},
 	"dependencies": {
 		"@mediapipe/tasks-vision": "^0.10.22-rc.20250304",
