@@ -5,7 +5,10 @@
 		BufferGeometry,
 		BufferAttribute,
 		ShaderMaterial,
-		AdditiveBlending
+		AdditiveBlending,
+		Sphere,
+		Box3,
+		Vector3
 	} from 'three';
 	import { particleCount } from '$lib/stores/settings';
 	import particleVert from '$shaders/rendering/particle.vert.glsl?raw';
@@ -45,7 +48,13 @@
 		const dummyPositions = new Float32Array(actualParticleCount * 3);
 		geometry.setAttribute('position', new BufferAttribute(dummyPositions, 3));
 		
-		// Disable automatic bounding sphere computation since positions come from texture
+		// Manually set bounding sphere to avoid null errors and prevent culling issues
+		// since positions are determined in vertex shader
+		geometry.boundingSphere = new Sphere(new Vector3(), Infinity);
+		geometry.boundingBox = new Box3(
+			new Vector3(-Infinity, -Infinity, -Infinity),
+			new Vector3(Infinity, Infinity, Infinity)
+		);
 		geometry.computeBoundingSphere = () => {};
 		geometry.computeBoundingBox = () => {};
 
