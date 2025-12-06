@@ -1,7 +1,7 @@
 /**
  * Particle Vertex Shader
  * Reads position from texture and renders as points
- * Will be implemented in Milestone 1
+ * Implements distance attenuation for point size
  */
 
 attribute float aIndex;
@@ -14,8 +14,24 @@ varying vec3 vPosition;
 varying float vDepth;
 
 void main() {
-	// Placeholder - will implement particle rendering in Milestone 1
-	gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
-	gl_PointSize = uPointSize;
+	// Calculate UV coordinates from particle index
+	// Texture is uTextureSize x uTextureSize
+	float u = mod(aIndex, uTextureSize) / uTextureSize;
+	float v = floor(aIndex / uTextureSize) / uTextureSize;
+	vec2 uv = vec2(u, v);
+
+	// Read position from texture (RGBA: x, y, z, lifetime)
+	vec4 positionData = texture2D(uPositionTexture, uv);
+	vPosition = positionData.xyz;
+
+	// Transform to clip space
+	vec4 mvPosition = modelViewMatrix * vec4(vPosition, 1.0);
+	vDepth = -mvPosition.z;
+	gl_Position = projectionMatrix * mvPosition;
+
+	// Distance attenuation: point size scales with distance
+	// Formula: size * (scale / -mvPosition.z)
+	float scale = 300.0; // Adjust for desired size scaling
+	gl_PointSize = uPointSize * (scale / max(-mvPosition.z, 0.1));
 }
 
