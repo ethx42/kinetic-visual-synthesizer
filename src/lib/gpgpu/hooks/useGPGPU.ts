@@ -19,7 +19,6 @@ import {
 	OrthographicCamera,
 	Mesh,
 	RawShaderMaterial,
-	ShaderMaterial,
 	Sphere,
 	Box3,
 	Vector3
