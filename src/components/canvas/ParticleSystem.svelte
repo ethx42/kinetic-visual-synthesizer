@@ -2,14 +2,14 @@
 	import { getContext, onMount } from 'svelte';
 	import { T } from '@threlte/core';
 	import {
-			BufferGeometry,
-			BufferAttribute,
-			ShaderMaterial,
-			AdditiveBlending,
-			Sphere,
-			Box3,
-			Vector3
-		} from 'three';
+		BufferGeometry,
+		BufferAttribute,
+		ShaderMaterial,
+		AdditiveBlending,
+		Sphere,
+		Box3,
+		Vector3
+	} from 'three';
 	import { particleCount } from '$lib/stores/settings';
 	import particleVert from '$shaders/rendering/particle.vert.glsl?raw';
 	import particleFrag from '$shaders/rendering/particle.frag.glsl?raw';
@@ -42,20 +42,20 @@
 			indices[i] = i;
 		}
 		geometry.setAttribute('aIndex', new BufferAttribute(indices, 1));
-		
-				// Add dummy position attribute (Three.js requires it, but shader reads from texture)
-				// This prevents NaN errors in bounding sphere computation
-				const dummyPositions = new Float32Array(actualParticleCount * 3);
-				geometry.setAttribute('position', new BufferAttribute(dummyPositions, 3));
 
-				// Create valid bounding sphere and box to prevent null reference errors
-				// Use a large sphere to encompass all possible particle positions
-				geometry.boundingSphere = new Sphere(new Vector3(0, 0, 0), 100);
-				geometry.boundingBox = new Box3(new Vector3(-100, -100, -100), new Vector3(100, 100, 100));
+		// Add dummy position attribute (Three.js requires it, but shader reads from texture)
+		// This prevents NaN errors in bounding sphere computation
+		const dummyPositions = new Float32Array(actualParticleCount * 3);
+		geometry.setAttribute('position', new BufferAttribute(dummyPositions, 3));
 
-				// Disable automatic bounding sphere computation since positions come from texture
-				geometry.computeBoundingSphere = () => {};
-				geometry.computeBoundingBox = () => {};
+		// Create valid bounding sphere and box to prevent null reference errors
+		// Use a large sphere to encompass all possible particle positions
+		geometry.boundingSphere = new Sphere(new Vector3(0, 0, 0), 100);
+		geometry.boundingBox = new Box3(new Vector3(-100, -100, -100), new Vector3(100, 100, 100));
+
+		// Disable automatic bounding sphere computation since positions come from texture
+		geometry.computeBoundingSphere = () => {};
+		geometry.computeBoundingBox = () => {};
 
 		// Get current position texture
 		const positionTexture = gpgpu.readPosition();
@@ -67,7 +67,7 @@
 			uniforms: {
 				uPositionTexture: { value: positionTexture.texture },
 				uTextureSize: { value: textureSize },
-				uPointSize: { value: 2.0 }
+				uPointSize: { value: 0.005 }
 			},
 			blending: AdditiveBlending,
 			depthTest: true,
@@ -78,6 +78,5 @@
 </script>
 
 {#if geometry && material}
-	<T.Points geometry={geometry} material={material} frustumCulled={false} />
+	<T.Points {geometry} {material} frustumCulled={false} />
 {/if}
-
