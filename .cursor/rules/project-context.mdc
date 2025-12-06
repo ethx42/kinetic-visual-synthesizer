@@ -1,0 +1,101 @@
+---
+description: Comprehensive project context for the Kinetic Visual Synthesizer (KVS)
+globs: ['**/*']
+---
+
+# Kinetic Visual Synthesizer (KVS) - Project Rules
+
+## 1. Project Vision
+
+**"Sculpt math with your hands."**
+Project KVS is a browser-based "Visual Synthesizer" that empowers users to manipulate 1 million particles in real-time using hand gestures. It translates physical human tension into digital entropy, bridging biological input with mathematical vector fields.
+
+## 2. Architecture Overview
+
+The system operates on a split-architecture model to ensure 60 FPS performance:
+
+### 2.1 Dual-Loop Architecture
+
+1.  **Input Loop (CPU/Worker):**
+    - Captures webcam frames (~30 FPS).
+    - Runs MediaPipe Hands in a **Web Worker**.
+    - Calculates "Tension" (Thumb-Index distance) and normalized coordinates.
+    - Updates Svelte reactive stores.
+2.  **Physics Loop (GPU):**
+    - Runs at screen refresh rate (60+ FPS).
+    - Uses **GPGPU** (General-Purpose computing on Graphics Processing Units) via Fragment Shaders.
+    - Ping-Pong FBO (Frame Buffer Object) technique for particle state (Position/Velocity).
+    - Reads reactive stores via Uniforms.
+
+### 2.2 Technology Stack
+
+- **Framework:** Svelte 5 (Runes API).
+- **3D Engine:** Threlte 7+ (Three.js wrapper).
+- **Physics:** Custom raw WebGL shaders (GLSL).
+- **Computer Vision:** `@mediapipe/tasks-vision` (Worker-based).
+- **Build:** Vite 7+.
+- **Language:** TypeScript 5.9+.
+
+## 3. Coding Standards & Guidelines
+
+### 3.1 Core Principles
+
+- **Zero-Garbage:** No memory allocation (`new Vector3`, `[]`, etc.) inside the render loop. Pre-allocate all re-used objects.
+- **Worker-First Vision:** All heavy computer vision processing MUST occur in a Web Worker.
+- **Reactive Bridge:** The CPU communicates with the GPU **only** via Uniforms updated from Svelte Stores. Never read back textures to CPU unless for debugging.
+- **Strict Typing:** No `any`. Define interfaces for all data structures.
+
+### 3.2 File Structure
+
+```
+src/
+├── lib/
+│   ├── gpgpu/           # FBO & Simulation logic
+│   ├── shaders/         # .glsl files (vertex/fragment)
+│   ├── stores/          # Svelte Runes/Stores (State)
+│   └── vision/          # MediaPipe & Worker logic
+├── components/
+│   ├── canvas/          # 3D/Threlte components
+│   └── ui/              # DOM/Svelte UI overlay
+```
+
+### 3.3 Naming Conventions
+
+- **Components:** PascalCase (`ParticleSystem.svelte`)
+- **Stores/Hooks:** camelCase (`useGPGPU.ts`, `tensionStore.ts`)
+- **Shader Uniforms:** camelCase with `u` prefix (`uTime`, `uEntropy`)
+- **Shader Varyings:** camelCase with `v` prefix (`vPosition`)
+
+## 4. Key Modules
+
+### 4.1 GPGPU Simulation
+
+- **Ping-Pong:** Use two render targets for Position and two for Velocity. Swap read/write every frame.
+- **Texture Data:**
+  - `PositionTexture`: RGBA (x, y, z, lifetime)
+  - `VelocityTexture`: RGBA (vx, vy, vz, mass)
+
+### 4.2 Computer Vision (Hand Tracking)
+
+- **Tension Calculation:** Euclidean distance between Thumb Tip (4) and Index Tip (8), normalized by hand size (Wrist to Middle MCP).
+- **Signal Loss:** If tracking confidence < threshold, trigger "Glitch" effect.
+
+### 4.3 Visual Synthesis
+
+- **Vector Fields:** Switchable algorithms (Curl Noise, Lorenz Attractor, Gravity Grid).
+- **Coloring:** Procedural, velocity-based coloring in fragment shader.
+
+## 5. Performance Constraints
+
+- **Target:** 60 FPS on GTX 1060 equivalent.
+- **Particle Count:** 1,000,000 particles.
+- **Latency:** < 50ms from hand movement to visual update.
+
+## 6. Git & Workflow
+
+- **Commits:** Semantic Commit Messages (feat, fix, chore, docs).
+- **Hooks:** Husky/Lint-staged configured for Prettier/ESLint.
+
+---
+
+_Refer to `docs/project_kvs_srd.md` and `docs/DEVELOPMENT_PLAN.md` for detailed specifications._

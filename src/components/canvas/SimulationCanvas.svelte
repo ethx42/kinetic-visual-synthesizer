@@ -2,8 +2,12 @@
 	import { Canvas, T } from '@threlte/core';
 	import { OrbitControls } from '@threlte/extras';
 	import { onMount } from 'svelte';
+	import GPGPUSimulation from './GPGPUSimulation.svelte';
+	import ParticleSystem from './ParticleSystem.svelte';
+	import DebugPlane from './DebugPlane.svelte';
 
 	let webgl2Supported = false;
+	let showDebug = false;
 
 	onMount(() => {
 		const canvas = document.createElement('canvas');
@@ -13,6 +17,15 @@
 		if (!webgl2Supported) {
 			console.warn('WebGL2 not supported. Falling back to WebGL1 with reduced precision.');
 		}
+
+		// Toggle debug view with 'D' key
+		const handleKeyPress = (e: KeyboardEvent) => {
+			if (e.key === 'd' || e.key === 'D') {
+				showDebug = !showDebug;
+			}
+		};
+		window.addEventListener('keypress', handleKeyPress);
+		return () => window.removeEventListener('keypress', handleKeyPress);
 	});
 </script>
 
@@ -30,7 +43,11 @@
 	</T.PerspectiveCamera>
 	<T.AmbientLight intensity={0.5} />
 
-	<!-- Particle system will be added here in Milestone 1 -->
+	<!-- GPGPU Simulation System -->
+	<GPGPUSimulation>
+		<ParticleSystem />
+		<DebugPlane visible={showDebug} />
+	</GPGPUSimulation>
 </Canvas>
 
 <style>

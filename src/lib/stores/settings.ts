@@ -2,5 +2,7 @@
  * Global settings store
  * Controls particle count, quality settings, etc.
  */
-export const particleCount = $state(1_000_000);
+import { writable } from 'svelte/store';
+
+export const particleCount = writable(1_000_000);
 export const maxParticles = 1_000_000;
