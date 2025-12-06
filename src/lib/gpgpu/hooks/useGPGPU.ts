@@ -19,7 +19,10 @@ import {
 	OrthographicCamera,
 	Mesh,
 	RawShaderMaterial,
-	ShaderMaterial
+	ShaderMaterial,
+	Sphere,
+	Box3,
+	Vector3
 } from 'three';
 import type { GPGPUConfig } from '../types';
 
@@ -103,11 +106,18 @@ function createFullscreenQuad(): BufferGeometry {
 	geometry.setAttribute('position', new BufferAttribute(vertices, 2));
 	geometry.setAttribute('uv', new BufferAttribute(uvs, 2));
 	geometry.setIndex([0, 1, 2, 2, 1, 3]); // Two triangles
-	
-	// Disable automatic bounding sphere computation to avoid NaN errors
+
+	// Create valid bounding sphere and box to prevent null reference errors
+	// The quad spans from (-1,-1,0) to (1,1,0), so we use a sphere centered at origin
+	// with radius sqrt(2) to encompass all vertices
+	geometry.boundingSphere = new Sphere(new Vector3(0, 0, 0), Math.SQRT2);
+	geometry.boundingBox = new Box3(new Vector3(-1, -1, 0), new Vector3(1, 1, 0));
+
+	// Override compute methods to prevent recalculation (which could cause NaN errors
+	// due to 2D vertex positions being interpreted as 3D)
 	geometry.computeBoundingSphere = () => {};
 	geometry.computeBoundingBox = () => {};
-	
+
 	return geometry;
 }
 
