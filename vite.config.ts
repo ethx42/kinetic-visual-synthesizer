@@ -12,5 +12,16 @@ export default defineConfig({
 			$shaders: fileURLToPath(new URL('./src/lib/shaders', import.meta.url)),
 			$components: fileURLToPath(new URL('./src/components', import.meta.url))
 		}
+	},
+	build: {
+		sourcemap: true
+	},
+	css: {
+		devSourcemap: true
+	},
+	optimizeDeps: {
+		esbuildOptions: {
+			sourcemap: 'inline'
+		}
 	}
 });

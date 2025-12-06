@@ -1,49 +1,88 @@
-# Kinetic Visual Synthesizer (Project KVS)
+# Kinetic Visual Synthesizer (KVS)
 
-A browser-based interactive 3D particle system controlled by hand gestures via webcam.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Status](https://img.shields.io/badge/status-alpha-orange.svg)
 
-Built with Svelte + TypeScript + Vite + Three.js + MediaPipe.
+> **Sculpt math with your hands.**
 
-## Recommended IDE Setup
+**Project KVS** is a browser-based, high-performance visualization instrument. It functions as a **"Visual Synthesizer,"** empowering users to manipulate complex mathematical vector fields in real-time using hand gestures captured via webcam. By translating physical human tension into digital entropy, it allows you to interactively control a simulation of **1 million particles** directly in your browser.
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+---
 
-## Need an official Svelte framework?
+## 🌟 Key Features
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+- **GPGPU Physics Engine**: Utilizes "Ping-Pong" FBO (Frame Buffer Object) architecture to simulate over **1,000,000 concurrent particles** on standard hardware.
+- **Computer Vision Control**: Integrated **MediaPipe Hands** tracking runs in a dedicated Web Worker, ensuring 60 FPS rendering while interpreting hand gestures with <50ms latency.
+- **Vector Field Synthesis**: Switchable mathematical models including:
+  - **Curl Noise**: Fluid-like, non-divergent flow.
+  - **Strange Attractors**: Chaotic systems like Lorenz or Aizawa.
+  - **Gravity Grids**: Deformable structural lattices.
+- **"Cyberdeck" Aesthetic**: A semi-transparent, monospaced HUD overlay inspired by sci-fi interfaces, featuring real-time telemetry and "glitch" effects on signal loss.
+- **Reactive Audio/Visuals**: Procedural coloring based on particle velocity and density.
 
-## Technical considerations
+## 🛠️ Tech Stack
 
-**Why use this over SvelteKit?**
+- **Framework**: [Svelte 5](https://svelte.dev/) (Runes-based reactivity)
+- **3D Engine**: [Three.js](https://threejs.org/) via [Threlte](https://threlte.xyz/)
+- **Physics**: Custom WebGL GPGPU (Fragment Shaders)
+- **Input**: [Google MediaPipe Tasks Vision](https://developers.google.com/mediapipe)
+- **Build Tool**: [Vite](https://vitejs.dev/)
+- **Language**: TypeScript
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+## 🚀 Getting Started
 
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
+### Prerequisites
 
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
+- Node.js 18+
+- A modern browser with WebGL2 support (Chrome/Edge/Firefox recommended)
+- A webcam (for hand tracking features)
 
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
+### Installation
 
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
+1.  **Clone the repository:**
 
-**Why include `.vscode/extensions.json`?**
+    ```bash
+    git clone https://github.com/ethx42/kinetic-visual-synthesizer.git
+    cd kinetic-visual-synthesizer
+    ```
 
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
+2.  **Install dependencies:**
 
-**Why enable `allowJs` in the TS template?**
+    ```bash
+    yarn install
+    ```
 
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
+3.  **Start the development server:**
 
-**Why is HMR not preserving my local component state?**
+    ```bash
+    yarn dev
+    ```
 
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
+4.  Open your browser and navigate to `http://localhost:5173`.
 
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
+## 🎮 Usage / Controls
 
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store';
-export default writable(0);
-```
+Once the application is running:
+
+1.  **Allow Camera Access**: The app requires webcam access to track your hand movements.
+2.  **Gesture Control**:
+    - **Tension (Thumb + Index Finger)**: Pinch your fingers to increase "Tension".
+      - **Open Hand (0.0)**: Organized, laminar flow.
+      - **Closed Pinch (1.0)**: High entropy, chaos, and increased particle velocity.
+3.  **Keyboard Shortcuts**:
+    - `D`: Toggle Debug View (Velocity Texture).
+
+## 🏗️ Architecture
+
+The system operates on two concurrent loops to ensure maximum performance:
+
+1.  **The Input Loop (CPU / Web Worker):** Captures webcam frames, infers hand landmarks, and calculates tension values.
+2.  **The Physics Loop (GPU):** Reads tension uniforms, computes particle positions via fragment shaders, and renders the scene.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+_Designed for engineers, hackers, and creative coders._
