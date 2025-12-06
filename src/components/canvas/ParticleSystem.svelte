@@ -67,7 +67,7 @@
 			uniforms: {
 				uPositionTexture: { value: positionTexture.texture },
 				uTextureSize: { value: textureSize },
-				uPointSize: { value: 0.005 }
+				uPointSize: { value: 0.002 }
 			},
 			blending: AdditiveBlending,
 			depthTest: true,
