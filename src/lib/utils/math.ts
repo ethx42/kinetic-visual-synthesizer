@@ -20,8 +20,10 @@ export function distance3D(
 	y2: number,
 	z2: number
 ): number {
-	tempVec3.set(x1, y1, z1);
-	return tempVec3.distanceTo(new THREE.Vector3(x2, y2, z2));
+	const dx = x2 - x1;
+	const dy = y2 - y1;
+	const dz = z2 - z1;
+	return Math.sqrt(dx * dx + dy * dy + dz * dz);
 }
 
 /**
