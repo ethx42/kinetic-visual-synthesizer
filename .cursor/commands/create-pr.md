@@ -16,6 +16,7 @@ Generate a comprehensive Pull Request description based on the current branch's 
 First, collect the following information from git:
 
 1. **Current Branch Name:**
+
    ```bash
    git branch --show-current
    ```
@@ -24,16 +25,17 @@ First, collect the following information from git:
    The base branch is the branch that the current branch was created from. This may not always be `main`. To detect it:
 
    **Recommended method** (most accurate):
+
    ```bash
    CURRENT_BRANCH=$(git branch --show-current)
-   
+
    # Get the first commit on current branch that's not in main
    FIRST_COMMIT=$(git log --oneline --reverse ${CURRENT_BRANCH} --not main | head -1 | cut -d' ' -f1)
-   
+
    if [ -n "$FIRST_COMMIT" ]; then
      # Get the parent of the first commit (this is where the branch was created from)
      PARENT_COMMIT=$(git rev-parse "${FIRST_COMMIT}^" 2>/dev/null || echo "")
-     
+
      if [ -n "$PARENT_COMMIT" ]; then
        # Find which branch(es) contain this parent commit (excluding current branch)
        BASE_BRANCH=$(git branch --contains $PARENT_COMMIT --all 2>/dev/null | \
@@ -46,17 +48,18 @@ First, collect the following information from git:
          sed 's/^remotes\/origin\///')
      fi
    fi
-   
+
    # Fallback to main if detection failed
    BASE_BRANCH=${BASE_BRANCH:-main}
    echo $BASE_BRANCH
    ```
 
    **Alternative method** (simpler, but may be less accurate):
+
    ```bash
    CURRENT_BRANCH=$(git branch --show-current)
    MERGE_BASE=$(git merge-base HEAD main)
-   
+
    # Find branches that contain the merge-base (excluding current branch)
    BASE_BRANCH=$(git branch --contains $MERGE_BASE --all 2>/dev/null | \
      grep -v "$CURRENT_BRANCH" | \
@@ -66,7 +69,7 @@ First, collect the following information from git:
      head -1 | \
      sed 's/^[ *]*//' | \
      sed 's/^remotes\/origin\///')
-   
+
    # Default to main if not found
    BASE_BRANCH=${BASE_BRANCH:-main}
    echo $BASE_BRANCH
@@ -75,35 +78,41 @@ First, collect the following information from git:
    **Note:** Store the detected base branch in a variable `BASE_BRANCH` for use in subsequent commands. The recommended method is more accurate as it finds the exact point where the branch diverged.
 
 3. **Files Changed:**
+
    ```bash
    # Use detected BASE_BRANCH instead of hardcoded main
    git diff --name-status origin/${BASE_BRANCH}...HEAD 2>/dev/null || git diff --name-status HEAD~1..HEAD
    ```
 
 4. **Commit Messages:**
+
    ```bash
    # Use detected BASE_BRANCH instead of hardcoded main
    git log origin/${BASE_BRANCH}..HEAD --oneline 2>/dev/null || git log --oneline -10
    ```
 
 5. **Diff Summary:**
+
    ```bash
    # Use detected BASE_BRANCH instead of hardcoded main
    git diff --stat origin/${BASE_BRANCH}...HEAD 2>/dev/null || git diff --stat HEAD~1..HEAD
    ```
 
 6. **Uncommitted Changes:**
+
    ```bash
    git status --short
    ```
 
 7. **Check if Branch is Pushed:**
+
    ```bash
    git status
    git log origin/$(git branch --show-current)..HEAD --oneline 2>/dev/null | head -1
    ```
 
 8. **Verify GitHub CLI is Available:**
+
    ```bash
    which gh
    ```
@@ -313,6 +322,7 @@ Apply these intelligent defaults based on analysis:
 Generate a PR title based on the branch name and commit messages:
 
 1. **Extract Semantic Prefix:** From commit messages, identify the most common type:
+
    ```bash
    CURRENT_BRANCH=$(git branch --show-current)
    COMMIT_TYPES=$(git log origin/${BASE_BRANCH}..HEAD --oneline 2>/dev/null | \
@@ -321,6 +331,7 @@ Generate a PR title based on the branch name and commit messages:
    ```
 
 2. **Generate Title from Branch Name:**
+
    ```bash
    # Convert branch name to Title Case
    # Remove common prefixes (feature/, fix/, etc.)
@@ -331,7 +342,7 @@ Generate a PR title based on the branch name and commit messages:
      sed 's/^refactor\///' | \
      sed 's/-/ /g' | \
      sed 's/\b\(.\)/\u\1/g')
-   
+
    # If we have a commit type, prefix it
    if [ -n "$COMMIT_TYPES" ]; then
      PR_TITLE="${COMMIT_TYPES}: ${DESCRIPTION}"
@@ -364,6 +375,7 @@ gh pr list --head $(git branch --show-current) --json number,title,url,state
 ```
 
 **Handle Results:**
+
 - If PR exists: Inform user with PR details and exit (don't create duplicate)
 - If no PR exists: Proceed to create new PR
 
@@ -390,7 +402,7 @@ After generating the PR description, create the PR using GitHub CLI:
    COMMIT_TYPES=$(git log origin/${BASE_BRANCH}..HEAD --oneline 2>/dev/null | \
      grep -oE '^(feat|fix|perf|refactor|chore|docs|test|breaking)' | \
      head -1)
-   
+
    DESCRIPTION=$(echo ${CURRENT_BRANCH} | \
      sed 's/^feature\///' | \
      sed 's/^fix\///' | \
@@ -398,13 +410,13 @@ After generating the PR description, create the PR using GitHub CLI:
      sed 's/^refactor\///' | \
      sed 's/-/ /g' | \
      sed 's/\b\(.\)/\u\1/g')
-   
+
    if [ -n "$COMMIT_TYPES" ]; then
      PR_TITLE="${COMMIT_TYPES}: ${DESCRIPTION}"
    else
      PR_TITLE="${DESCRIPTION}"
    fi
-   
+
    gh pr create \
      --base ${BASE_BRANCH} \
      --title "${PR_TITLE}" \
@@ -419,7 +431,7 @@ After generating the PR description, create the PR using GitHub CLI:
    COMMIT_TYPES=$(git log origin/${BASE_BRANCH}..HEAD --oneline 2>/dev/null | \
      grep -oE '^(feat|fix|perf|refactor|chore|docs|test|breaking)' | \
      head -1)
-   
+
    DESCRIPTION=$(echo ${CURRENT_BRANCH} | \
      sed 's/^feature\///' | \
      sed 's/^fix\///' | \
@@ -427,13 +439,13 @@ After generating the PR description, create the PR using GitHub CLI:
      sed 's/^refactor\///' | \
      sed 's/-/ /g' | \
      sed 's/\b\(.\)/\u\1/g')
-   
+
    if [ -n "$COMMIT_TYPES" ]; then
      PR_TITLE="${COMMIT_TYPES}: ${DESCRIPTION}"
    else
      PR_TITLE="${DESCRIPTION}"
    fi
-   
+
    gh pr create \
      --base ${BASE_BRANCH} \
      --title "${PR_TITLE}" \
@@ -441,6 +453,7 @@ After generating the PR description, create the PR using GitHub CLI:
    ```
 
 3. **Verify PR Creation:**
+
    ```bash
    gh pr view <PR_NUMBER> --json number,title,state,url
    ```
@@ -489,6 +502,7 @@ After running git commands and analysis, generate the PR description:
 This PR implements a GPGPU-accelerated particle simulation system using FBO ping-pong techniques. It establishes the core simulation loop with Velocity Verlet integration and curl noise vector fields, ensuring 60 FPS performance with 1 million particles.
 
 Key changes:
+
 - Added `useGPGPU` hook for FBO lifecycle management
 - Implemented simulation fragment shader with curl noise
 - Created reactive bridge between Svelte stores and shader uniforms
@@ -563,11 +577,13 @@ No special deployment considerations
 ## Step 5: Generate PR Title
 
 From branch `${CURRENT_BRANCH}` (e.g., `simulation-canvas`):
+
 - Generate title: `feat: Simulation Canvas` (if commit messages indicate "feat")
 
 ## Step 6: Check for Existing PR
 
 Execute:
+
 ```bash
 CURRENT_BRANCH=$(git branch --show-current)
 gh pr list --head ${CURRENT_BRANCH} --json number,title,url,state
@@ -578,6 +594,7 @@ Result: No existing PR found, proceeding to create.
 ## Step 7: Create PR
 
 First, detect the base branch:
+
 ```bash
 # Detect base branch using recommended method
 CURRENT_BRANCH=$(git branch --show-current)
@@ -602,6 +619,7 @@ echo "Detected base branch: $BASE_BRANCH"
 ```
 
 Then create the PR using the detected base branch:
+
 ```bash
 CURRENT_BRANCH=$(git branch --show-current)
 COMMIT_TYPES=$(git log origin/${BASE_BRANCH}..HEAD --oneline 2>/dev/null | \
@@ -630,6 +648,7 @@ gh pr create --base ${BASE_BRANCH} --title "${PR_TITLE}" --body "<PR description
 **✅ Pull Request Created Successfully!**
 
 **PR Details:**
+
 - **Number:** #<PR_NUMBER>
 - **Title:** ${PR_TITLE} (e.g., `feat: Simulation Canvas`)
 - **Status:** OPEN
@@ -638,4 +657,3 @@ gh pr create --base ${BASE_BRANCH} --title "${PR_TITLE}" --body "<PR description
 - **Head branch:** ${CURRENT_BRANCH} (e.g., `simulation-canvas`)
 
 The PR is ready for review!
-
