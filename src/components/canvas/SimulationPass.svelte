@@ -17,7 +17,9 @@
 		vectorFieldType,
 		noiseScale,
 		noiseSpeed,
+		noiseStrength,
 		attractorStrength,
+		damping,
 		currentPositionTexture,
 		currentVelocityTexture
 	} from '$lib/stores/settings';
@@ -80,8 +82,11 @@
 				uEntropy: { value: 0.0 },
 				uNoiseScale: { value: 1.0 },
 				uNoiseSpeed: { value: 0.5 },
+				uNoiseStrength: { value: 8.0 },
 				uFieldType: { value: 0.0 }, // 0 = CURL_NOISE, 1 = LORENZ, 2 = AIZAWA
 				uAttractorStrength: { value: 0.5 },
+				uDamping: { value: 0.01 }, // 0.01 = 1% damping per frame (very smooth)
+				uBoundarySize: { value: 5.0 }, // Boundary size for particle wrapping (5 units from center)
 				uOutputMode: { value: 0.0 } // 0 = position, 1 = velocity
 			}
 		});
@@ -161,7 +166,9 @@
 		material.uniforms.uFieldType.value = $vectorFieldType;
 		material.uniforms.uNoiseScale.value = $noiseScale;
 		material.uniforms.uNoiseSpeed.value = $noiseSpeed;
+		material.uniforms.uNoiseStrength.value = $noiseStrength;
 		material.uniforms.uAttractorStrength.value = $attractorStrength;
+		material.uniforms.uDamping.value = $damping;
 		material.uniforms.uPositionTexture.value = positionRead.texture;
 		material.uniforms.uVelocityTexture.value = velocityRead.texture;
 

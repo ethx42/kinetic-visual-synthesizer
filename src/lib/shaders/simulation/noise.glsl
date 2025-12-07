@@ -164,6 +164,7 @@ vec3 curlNoise(vec3 p, float scale, float eps) {
 /**
  * Animated Curl Noise
  * Adds time-based animation to the curl field
+ * Uses symmetric time offsets to prevent directional bias
  * @param p Input 3D position
  * @param time Time value for animation
  * @param scale Noise scale factor
@@ -171,7 +172,38 @@ vec3 curlNoise(vec3 p, float scale, float eps) {
  * @return Animated curl vector
  */
 vec3 curlNoiseAnimated(vec3 p, float time, float scale, float speed) {
-	// Offset position by time for animation
-	vec3 animatedP = p + vec3(time * speed, time * speed * 0.7, time * speed * 0.3);
+	// Use symmetric time offsets to prevent directional bias
+	// Different speeds per axis but balanced to avoid cone-like patterns
+	float timeOffset = time * speed;
+	vec3 animatedP = p + vec3(
+		timeOffset * 0.5,
+		timeOffset * 0.7,
+		timeOffset * 0.3
+	);
 	return curlNoise(animatedP, scale, 0.01);
+}
+
+/**
+ * Multi-layered Curl Noise
+ * Combines multiple curl noise layers at different scales for more complex, uniform flow
+ * This eliminates directional bias and creates more organic, balanced motion
+ * @param p Input 3D position
+ * @param time Time value for animation
+ * @param scale Base noise scale factor
+ * @param speed Animation speed
+ * @return Combined curl vector from multiple layers
+ */
+vec3 curlNoiseMultiLayer(vec3 p, float time, float scale, float speed) {
+	// Layer 1: Large-scale flow (primary motion)
+	vec3 layer1 = curlNoiseAnimated(p, time, scale * 0.5, speed * 0.3);
+	
+	// Layer 2: Medium-scale detail (adds complexity)
+	vec3 layer2 = curlNoiseAnimated(p * 1.5 + vec3(10.0, 20.0, 30.0), time, scale, speed * 0.5);
+	
+	// Layer 3: Fine-scale turbulence (adds texture)
+	vec3 layer3 = curlNoiseAnimated(p * 3.0 + vec3(50.0, 100.0, 150.0), time, scale * 2.0, speed * 0.7);
+	
+	// Combine layers with weighted sum (larger scale has more influence)
+	// This creates balanced, non-directional flow
+	return layer1 * 0.6 + layer2 * 0.3 + layer3 * 0.1;
 }

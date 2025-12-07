@@ -6,6 +6,7 @@
 	import ParticleSystem from './ParticleSystem.svelte';
 	import SimulationPass from './SimulationPass.svelte';
 	import DebugPlane from './DebugPlane.svelte';
+	import SimulationControls from '../ui/SimulationControls.svelte';
 
 	let webgl2Supported = false;
 	let showDebug = false;
@@ -52,10 +53,27 @@
 	</GPGPUSimulation>
 </Canvas>
 
+<!-- UI Controls -->
+<SimulationControls />
+
 <style>
 	:global(canvas) {
 		display: block;
 		width: 100%;
 		height: 100%;
+		margin: 0;
+		padding: 0;
+	}
+
+	:global(body) {
+		margin: 0;
+		padding: 0;
+		overflow: hidden;
+	}
+
+	:global(html) {
+		margin: 0;
+		padding: 0;
+		overflow: hidden;
 	}
 </style>

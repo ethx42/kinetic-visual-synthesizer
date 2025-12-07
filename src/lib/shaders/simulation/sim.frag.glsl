@@ -12,8 +12,11 @@ uniform float uDeltaTime;
 uniform float uEntropy;
 uniform float uNoiseScale;
 uniform float uNoiseSpeed;
+uniform float uNoiseStrength; // Intensity multiplier for curl noise
 uniform float uFieldType; // 0 = CURL_NOISE, 1 = LORENZ, 2 = AIZAWA
 uniform float uAttractorStrength;
+uniform float uDamping; // Velocity damping factor (0.0 = no damping, 1.0 = full stop)
+uniform float uBoundarySize; // Size of the boundary box (particles wrap/reset if outside)
 uniform float uOutputMode; // 0 = output position, 1 = output velocity
 
 varying vec2 vUv;
@@ -36,9 +39,11 @@ void main() {
 	
 	if (uFieldType < 0.5) {
 		// CURL_NOISE mode: Divergence-free fluid-like flow
-		// Curl noise creates organic, fluid-like motion without clustering or exploding
-		// Scale down position to make noise features larger relative to particle cloud
-		vectorField = curlNoiseAnimated(position * 0.4, uTime, uNoiseScale, uNoiseSpeed) * 5.0; 
+		// Multi-layered curl noise creates balanced, organic motion without directional bias
+		// Scale position to control noise feature size (smaller = larger features)
+		float positionScale = 0.35;
+		// Use multi-layer curl noise for uniform, non-directional flow
+		vectorField = curlNoiseMultiLayer(position * positionScale, uTime, uNoiseScale, uNoiseSpeed) * uNoiseStrength; 
 		
 	} else if (uFieldType < 1.5) {
 		// LORENZ Attractor
@@ -90,10 +95,10 @@ void main() {
 	vec3 acceleration = finalField * uAttractorStrength;
 	vec3 newVelocity = velocity + acceleration * uDeltaTime;
 	
-	// Apply damping in CURL_NOISE mode (already handled above conditionally)
-	if (uFieldType < 0.5) {
-		newVelocity *= 0.98; // Reduced friction (was 0.96) to allow more gliding
-	}
+	// Apply damping (configurable per field type)
+	// uDamping is the retention factor: 1.0 = no damping, 0.0 = full stop
+	// Typical values: 0.98-0.99 for smooth fluid motion, 0.95-0.97 for more friction
+	newVelocity *= uDamping;
 
 	// Step 2: Update position using average velocity
 	// p_new = p_old + (v_old + v_new) / 2 * dt
@@ -106,6 +111,17 @@ void main() {
 		// Explicitly calculate new position using the calculated velocity
 		// p_new = p_old + v_new * dt
 		vec3 finalPosition = position + newVelocity * uDeltaTime;
+		
+		// Boundary checking: wrap particles that go outside the boundary
+		// This prevents particles from disappearing forever
+		// Using modulo wrapping for seamless boundaries (toroidal space)
+		float boundary = uBoundarySize;
+		float boundary2 = boundary * 2.0;
+		
+		// Wrap each axis: shift to [0, 2*boundary], apply mod, shift back to [-boundary, boundary]
+		finalPosition.x = mod(finalPosition.x + boundary, boundary2) - boundary;
+		finalPosition.y = mod(finalPosition.y + boundary, boundary2) - boundary;
+		finalPosition.z = mod(finalPosition.z + boundary, boundary2) - boundary;
 		
 		// Output position (RGBA: x, y, z, lifetime)
 		gl_FragColor = vec4(finalPosition, lifetime);
