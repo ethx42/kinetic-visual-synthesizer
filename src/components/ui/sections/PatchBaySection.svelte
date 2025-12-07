@@ -5,9 +5,14 @@
 	 */
 	import { patchMappings } from '$lib/stores/settings';
 	import { tension } from '$lib/stores/tension';
-	import { usePatchBay } from '$lib/ui/composables/usePatchBay';
+	import { usePatchBay, updatePatchBayValues } from '$lib/ui/composables/usePatchBay';
 
 	const { togglePatch, updatePatchRange } = usePatchBay();
+
+	// Update patch bay values reactively
+	$effect(() => {
+		updatePatchBayValues();
+	});
 </script>
 
 <div class="tension-display-small">

@@ -6,6 +6,7 @@
  */
 
 import { calibration, normalizedDistance } from '$lib/stores/calibration';
+import { get } from 'svelte/store';
 
 export interface CalibrationState {
 	isCalibrating: boolean;
@@ -21,11 +22,11 @@ export function useCalibration() {
 	}
 
 	function captureOpenHand(state: CalibrationState) {
-		state.openHandValue = $normalizedDistance;
+		state.openHandValue = get(normalizedDistance);
 	}
 
 	function captureClosedHand(state: CalibrationState) {
-		state.closedHandValue = $normalizedDistance;
+		state.closedHandValue = get(normalizedDistance);
 	}
 
 	function applyCalibration(state: CalibrationState) {
@@ -36,8 +37,9 @@ export function useCalibration() {
 		) {
 			// Add 20% margin on each side for better range
 			const margin = (state.closedHandValue - state.openHandValue) * 0.2;
+			const currentCalibration = get(calibration);
 			calibration.set({
-				...$calibration,
+				...currentCalibration,
 				smoothstepMin: Math.max(0, state.openHandValue - margin),
 				smoothstepMax: state.closedHandValue + margin
 			});

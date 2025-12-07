@@ -82,7 +82,7 @@ async function processFrame(imageData: ImageBitmap | VideoFrame, timestamp: numb
 	try {
 		// MediaPipe in VIDEO mode requires detectForVideo with timestamp
 		// ImageBitmap and VideoFrame are supported
-		const results = landmarker.detectForVideo(imageData as any, timestamp);
+		const results = landmarker.detectForVideo(imageData as ImageBitmap | VideoFrame, timestamp);
 
 		// Extract landmark data
 		// results.landmarks is an array of hands, each hand has 21 landmarks

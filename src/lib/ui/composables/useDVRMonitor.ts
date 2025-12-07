@@ -6,8 +6,6 @@
  * Component manages element references and animation frame.
  */
 
-import { handTracking } from '$lib/stores/handTracking';
-
 export function useDVRMonitor() {
 	/**
 	 * Process a single DVR frame with lo-fi effects
@@ -15,7 +13,8 @@ export function useDVRMonitor() {
 	function processDVRFrame(
 		videoElement: HTMLVideoElement,
 		canvasElement: HTMLCanvasElement,
-		canvasContext: CanvasRenderingContext2D
+		canvasContext: CanvasRenderingContext2D,
+		isTracking: boolean
 	): void {
 		if (videoElement.readyState >= 2) {
 			canvasContext.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
@@ -69,8 +68,7 @@ export function useDVRMonitor() {
 			canvasContext.fillText(timestamp, 10, canvasElement.height - 10);
 
 			// Draw tracking status
-			const tracking = $handTracking.isTracking;
-			if (tracking) {
+			if (isTracking) {
 				canvasContext.fillStyle = 'rgba(0, 255, 0, 0.8)';
 				canvasContext.fillText('TRACKING', 10, 20);
 			} else {

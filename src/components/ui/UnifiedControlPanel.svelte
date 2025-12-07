@@ -37,9 +37,13 @@
 
 	let visible = $state(false);
 	let isDragging = $state(false);
+	let hasDragged = $state(false); // Track if user actually dragged
 	let currentEdge = $state<Edge>('left');
 	let dragX = $state(0);
 	let dragY = $state(0);
+	let startX = $state(0);
+	let startY = $state(0);
+	let mouseDownTime = $state(0);
 
 	// Toggle with 'H' key
 	function handleKeyPress(e: KeyboardEvent) {
@@ -55,9 +59,13 @@
 
 	// Drag handlers
 	function handleMouseDown(e: MouseEvent) {
-		isDragging = true;
+		isDragging = false;
+		hasDragged = false;
+		startX = e.clientX;
+		startY = e.clientY;
 		dragX = e.clientX;
 		dragY = e.clientY;
+		mouseDownTime = Date.now();
 		document.addEventListener('mousemove', handleMouseMove);
 		document.addEventListener('mouseup', handleMouseUp);
 		e.preventDefault();
@@ -65,18 +73,34 @@
 	}
 
 	function handleMouseMove(e: MouseEvent) {
-		if (!isDragging) return;
-		dragX = e.clientX;
-		dragY = e.clientY;
-		const snapped = snapToEdge(e.clientX, e.clientY);
-		currentEdge = snapped.edge;
+		const deltaX = Math.abs(e.clientX - startX);
+		const deltaY = Math.abs(e.clientY - startY);
+		const threshold = 5; // Minimum pixels to consider it a drag
+
+		if (deltaX > threshold || deltaY > threshold) {
+			isDragging = true;
+			hasDragged = true;
+		}
+
+		if (isDragging) {
+			dragX = e.clientX;
+			dragY = e.clientY;
+			const snapped = snapToEdge(e.clientX, e.clientY);
+			currentEdge = snapped.edge;
+		}
 	}
 
 	function handleMouseUp(e: MouseEvent) {
-		if (!isDragging) return;
-		const snapped = snapToEdge(e.clientX, e.clientY);
-		position.set(snapped);
-		isDragging = false;
+		if (isDragging && hasDragged) {
+			const snapped = snapToEdge(e.clientX, e.clientY);
+			position.set(snapped);
+		}
+		// Don't reset hasDragged here - let onClick check it first
+		// Reset after a short delay to ensure onClick can check it
+		setTimeout(() => {
+			isDragging = false;
+			hasDragged = false;
+		}, 100);
 		dragX = 0;
 		dragY = 0;
 		document.removeEventListener('mousemove', handleMouseMove);
@@ -114,25 +138,38 @@
 	function getPanelStyle(): string {
 		const { edge, y, x } = $position;
 		const panelWidth = UI_CONSTANTS.PANEL.WIDTH;
-		const tabHeight = UI_CONSTANTS.TAB.HEIGHT;
+		const tabHeight = UI_CONSTANTS.TAB.HEIGHT; // 40px - altura cuando está horizontal
+		const tabWidth = UI_CONSTANTS.TAB.WIDTH; // 60px - ancho cuando está horizontal
 
 		switch (edge) {
 			case 'left':
+				// Tab: left: 0, top: y, width: 60px, height: 40px (horizontal)
+				// Panel: aparece a la derecha del tab, empieza en tabHeight (40px) desde left
+				// Max height: desde top del tab hasta bottom del viewport
 				return `left: ${tabHeight}px; top: ${y}px; width: ${panelWidth}px; max-height: calc(100vh - ${y}px);`;
-			case 'right':
-				return `right: ${tabHeight}px; top: ${y}px; width: ${panelWidth}px; max-height: calc(100vh - ${y}px);`;
-			case 'top':
-				return `top: ${tabHeight}px; left: ${x}px; width: ${panelWidth}px; max-height: calc(100vh - ${x}px);`;
-			case 'bottom':
-				return `bottom: ${tabHeight}px; left: ${x}px; width: ${panelWidth}px; max-height: calc(100vh - ${window.innerHeight - y}px);`;
-		}
-	}
 
-	function toggleSection(section: string) {
-		sectionStates.update((states) => ({
-			...states,
-			[section]: !states[section]
-		}));
+			case 'right':
+				// Tab: right: 0, top: y, width: 60px, height: 40px (horizontal)
+				// Panel: aparece a la izquierda del tab, empieza en tabHeight (40px) desde right
+				// Max height: desde top del tab hasta bottom del viewport
+				return `right: ${tabHeight}px; top: ${y}px; width: ${panelWidth}px; max-height: calc(100vh - ${y}px);`;
+
+			case 'top':
+				// Tab: top: 0, left: x, width: 40px (rotated), height: 60px (rotated)
+				// Panel: aparece debajo del tab, empieza en tabWidth (60px) desde top
+				// Max height: desde bottom del tab hasta bottom del viewport = 100vh - 60px
+				return `top: ${tabWidth}px; left: ${x}px; width: ${panelWidth}px; max-height: calc(100vh - ${tabWidth}px);`;
+
+			case 'bottom': {
+				// Tab: bottom: 0, left: x, width: 40px (rotated), height: 60px (rotated)
+				// Panel: aparece arriba del tab, empieza en tabWidth (60px) desde bottom
+				// Max height: espacio disponible desde top del viewport hasta top del tab
+				// Panel está en bottom: 60px, puede usar hasta 100vh - 60px
+				// Construir la expresión de manera explícita para evitar problemas de interpretación
+				const bottomOffset = tabWidth;
+				return `bottom: ${bottomOffset}px; left: ${x}px; width: ${panelWidth}px; max-height: calc(100vh - ${bottomOffset}px);`;
+			}
+		}
 	}
 
 	onDestroy(() => {
@@ -148,7 +185,11 @@
 	{isDragging}
 	onMouseDown={handleMouseDown}
 	onClick={() => {
-		if (!isDragging) {
+		// Only toggle if it wasn't a drag operation
+		// Check hasDragged flag - it will be true if user moved mouse more than threshold
+		// Also check time - if mouse was down for too long, it was likely a drag attempt
+		const clickDuration = Date.now() - mouseDownTime;
+		if (!hasDragged && !isDragging && clickDuration < 300) {
 			visible = !visible;
 		}
 	}}

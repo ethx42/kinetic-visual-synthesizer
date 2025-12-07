@@ -6,6 +6,7 @@
 	import { onDestroy } from 'svelte';
 	import { useDVRMonitor } from '$lib/ui/composables/useDVRMonitor';
 	import { videoStream } from '$lib/stores/videoStream';
+	import { handTracking } from '$lib/stores/handTracking';
 
 	let videoElement: HTMLVideoElement | null = $state(null);
 	let canvasElement: HTMLCanvasElement | null = $state(null);
@@ -43,7 +44,13 @@
 						if (!animationFrameId) {
 							const frameLoop = () => {
 								if (videoElement && canvasElement && canvasContext) {
-									processDVRFrame(videoElement, canvasElement, canvasContext);
+									// Access reactive store value inside the loop
+									processDVRFrame(
+										videoElement,
+										canvasElement,
+										canvasContext,
+										$handTracking.isTracking
+									);
 									animationFrameId = requestAnimationFrame(frameLoop);
 								}
 							};
