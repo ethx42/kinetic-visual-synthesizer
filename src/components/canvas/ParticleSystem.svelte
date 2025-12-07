@@ -10,7 +10,11 @@
 		Box3,
 		Vector3
 	} from 'three';
-	import { particleCount } from '$lib/stores/settings';
+	import {
+		particleCount,
+		currentPositionTexture,
+		currentVelocityTexture
+	} from '$lib/stores/settings';
 	import particleVert from '$shaders/rendering/particle.vert.glsl?raw';
 	import particleFrag from '$shaders/rendering/particle.frag.glsl?raw';
 	import type { UseGPGPUResult } from '$lib/gpgpu/hooks/useGPGPU';
@@ -57,8 +61,11 @@
 		geometry.computeBoundingSphere = () => {};
 		geometry.computeBoundingBox = () => {};
 
-		// Get current position texture
+		// Get initial position texture
 		const positionTexture = gpgpu.readPosition();
+		const velocityTexture = gpgpu.readVelocity();
+		currentPositionTexture.set(positionTexture.texture);
+		currentVelocityTexture.set(velocityTexture.texture);
 
 		// Create shader material
 		material = new ShaderMaterial({
@@ -66,8 +73,10 @@
 			fragmentShader: particleFrag,
 			uniforms: {
 				uPositionTexture: { value: positionTexture.texture },
+				uVelocityTexture: { value: velocityTexture.texture },
 				uTextureSize: { value: textureSize },
-				uPointSize: { value: 0.002 }
+				// VISIBILITY: Increased point size from 0.002 to 0.015
+				uPointSize: { value: 0.03 } // DOUBLED for maximum visibility
 			},
 			blending: AdditiveBlending,
 			depthTest: true,
@@ -75,6 +84,13 @@
 			transparent: true
 		});
 	});
+
+	// Reactively update position texture reference when store changes (ping-pong)
+	$: if (material && $currentPositionTexture && $currentVelocityTexture) {
+		material.uniforms.uPositionTexture.value = $currentPositionTexture;
+		material.uniforms.uVelocityTexture.value = $currentVelocityTexture;
+		material.uniforms.uTextureSize.value = textureSize;
+	}
 </script>
 
 {#if geometry && material}

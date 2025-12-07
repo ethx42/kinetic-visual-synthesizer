@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import GPGPUSimulation from './GPGPUSimulation.svelte';
 	import ParticleSystem from './ParticleSystem.svelte';
+	import SimulationPass from './SimulationPass.svelte';
 	import DebugPlane from './DebugPlane.svelte';
 
 	let webgl2Supported = false;
@@ -45,6 +46,7 @@
 
 	<!-- GPGPU Simulation System -->
 	<GPGPUSimulation>
+		<SimulationPass />
 		<ParticleSystem />
 		<DebugPlane visible={showDebug} />
 	</GPGPUSimulation>

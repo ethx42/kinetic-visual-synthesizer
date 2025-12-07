@@ -1,0 +1,213 @@
+<script lang="ts">
+	import { getContext, onMount, onDestroy } from 'svelte';
+	import { useThrelte, useTask } from '@threlte/core';
+	import {
+		BufferGeometry,
+		BufferAttribute,
+		RawShaderMaterial,
+		Scene,
+		OrthographicCamera,
+		Mesh,
+		Sphere,
+		Box3,
+		Vector3
+	} from 'three';
+	import { tension } from '$lib/stores/tension';
+	import {
+		vectorFieldType,
+		noiseScale,
+		noiseSpeed,
+		attractorStrength,
+		currentPositionTexture,
+		currentVelocityTexture
+	} from '$lib/stores/settings';
+	import simVert from '$shaders/simulation/sim.vert.glsl?raw';
+	import simFrag from '$shaders/simulation/sim.frag.glsl?raw';
+	import noiseFrag from '$shaders/simulation/noise.glsl?raw';
+	import type { UseGPGPUResult } from '$lib/gpgpu/hooks/useGPGPU';
+
+	// Get GPGPU system from context
+	const gpgpu = getContext<UseGPGPUResult>('gpgpu');
+	const { renderer } = useThrelte();
+
+	// Pre-allocated resources (Zero-Garbage principle)
+	let scene: Scene | null = null;
+	let camera: OrthographicCamera | null = null;
+	let mesh: Mesh | null = null;
+	let material: RawShaderMaterial | null = null;
+	let geometry: BufferGeometry | null = null;
+
+	// Time tracking (pre-allocated)
+	let currentTime = 0;
+	let isInitialized = false;
+
+	onMount(() => {
+		if (!gpgpu) {
+			console.error('GPGPU context not found. Make sure SimulationPass is inside GPGPUSimulation.');
+			return;
+		}
+
+		// Create fullscreen quad geometry
+		geometry = new BufferGeometry();
+		const vertices = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
+		const uvs = new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]);
+		geometry.setAttribute('position', new BufferAttribute(vertices, 2));
+		geometry.setAttribute('uv', new BufferAttribute(uvs, 2));
+		geometry.setIndex([0, 1, 2, 2, 1, 3]);
+
+		// Create valid bounding sphere and box
+		geometry.boundingSphere = new Sphere(new Vector3(0, 0, 0), Math.SQRT2);
+		geometry.boundingBox = new Box3(new Vector3(-1, -1, 0), new Vector3(1, 1, 0));
+		geometry.computeBoundingSphere = () => {};
+		geometry.computeBoundingBox = () => {};
+
+		// Create orthographic camera for fullscreen quad
+		camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+
+		// Get initial textures
+		const positionTexture = gpgpu.readPosition();
+		const velocityTexture = gpgpu.readVelocity();
+
+		// Create simulation shader material
+		material = new RawShaderMaterial({
+			vertexShader: 'precision highp float;\n' + simVert,
+			fragmentShader: 'precision highp float;\n' + noiseFrag + '\n' + simFrag,
+			uniforms: {
+				uPositionTexture: { value: positionTexture.texture },
+				uVelocityTexture: { value: velocityTexture.texture },
+				uTime: { value: 0.0 },
+				uDeltaTime: { value: 1.0 / 60.0 },
+				uEntropy: { value: 0.0 },
+				uNoiseScale: { value: 1.0 },
+				uNoiseSpeed: { value: 0.5 },
+				uFieldType: { value: 0.0 }, // 0 = CURL_NOISE, 1 = LORENZ, 2 = AIZAWA
+				uAttractorStrength: { value: 0.5 },
+				uOutputMode: { value: 0.0 } // 0 = position, 1 = velocity
+			}
+		});
+
+		// Create mesh
+		mesh = new Mesh(geometry, material);
+		mesh.frustumCulled = false;
+		scene = new Scene();
+		scene.add(mesh);
+
+		// Mark as initialized
+		isInitialized = true;
+		currentTime = performance.now() / 1000.0;
+
+		// Debug: Press 'P' to log particle velocity (dev mode only)
+		if (import.meta.env.DEV) {
+			const handleKeyPress = (e: KeyboardEvent) => {
+				if (e.key === 'p' || e.key === 'P') {
+					const gl = renderer.getContext();
+					const width = 1024; // Texture size
+					const height = 1024;
+
+					// Read from current velocity texture
+					const velocityTexture = gpgpu.readVelocity();
+					const buffer = new Float32Array(4); // Read 1 pixel (RGBA)
+
+					renderer.setRenderTarget(velocityTexture);
+					gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.FLOAT, buffer);
+					renderer.setRenderTarget(null);
+
+					console.log('🔍 PARTICLE DIAGNOSTIC (Center Pixel):');
+					console.log(
+						`Velocity: [x: ${buffer[0].toFixed(5)}, y: ${buffer[1].toFixed(5)}, z: ${buffer[2].toFixed(5)}]`
+					);
+					console.log(
+						`Magnitude: ${Math.sqrt(buffer[0] * buffer[0] + buffer[1] * buffer[1] + buffer[2] * buffer[2]).toFixed(5)}`
+					);
+				}
+			};
+			window.addEventListener('keypress', handleKeyPress);
+
+			// Cleanup debug handler
+			return () => {
+				window.removeEventListener('keypress', handleKeyPress);
+			};
+		}
+	});
+
+	// Use Threlte's useTask hook for reactive frame updates
+	// This replaces requestAnimationFrame and integrates with Threlte's lifecycle
+	// The task runs every frame before rendering (simulation updates happen first)
+	useTask('simulation-update', (delta) => {
+		// Skip if not initialized
+		if (!isInitialized || !scene || !camera || !material || !gpgpu) {
+			return;
+		}
+
+		// Update time (Threlte provides delta in seconds)
+		currentTime += delta;
+
+		// Cap delta time to prevent large jumps (max ~30 FPS equivalent)
+		const cappedDelta = Math.min(Math.max(delta, 0.001), 1.0 / 30.0);
+
+		// Get current read and write textures (ping-pong)
+		const positionRead = gpgpu.readPosition();
+		const velocityRead = gpgpu.readVelocity();
+		const positionWrite = gpgpu.writePosition();
+		const velocityWrite = gpgpu.writeVelocity();
+
+		// Save current render target and WebGL state
+		const previousRenderTarget = renderer.getRenderTarget();
+
+		// Update uniforms (reactive to stores)
+		material.uniforms.uTime.value = currentTime;
+		material.uniforms.uDeltaTime.value = cappedDelta;
+		material.uniforms.uEntropy.value = $tension;
+		material.uniforms.uFieldType.value = $vectorFieldType;
+		material.uniforms.uNoiseScale.value = $noiseScale;
+		material.uniforms.uNoiseSpeed.value = $noiseSpeed;
+		material.uniforms.uAttractorStrength.value = $attractorStrength;
+		material.uniforms.uPositionTexture.value = positionRead.texture;
+		material.uniforms.uVelocityTexture.value = velocityRead.texture;
+
+		// Phase 2.2: Update position and velocity
+		// Pass 1: Update position
+		material.uniforms.uOutputMode.value = 0.0; // Output position
+		renderer.setRenderTarget(positionWrite);
+		renderer.render(scene, camera);
+
+		// Pass 2: Update velocity
+		material.uniforms.uOutputMode.value = 1.0; // Output velocity
+		renderer.setRenderTarget(velocityWrite);
+		renderer.render(scene, camera);
+
+		// Swap ping-pong buffers after both passes
+		gpgpu.swap();
+
+		// Update position texture reference in store (for ParticleSystem)
+		const updatedPositionTexture = gpgpu.readPosition();
+		const updatedVelocityTexture = gpgpu.readVelocity();
+		currentPositionTexture.set(updatedPositionTexture.texture);
+		currentVelocityTexture.set(updatedVelocityTexture.texture);
+
+		// Restore previous render target
+		renderer.setRenderTarget(previousRenderTarget);
+
+		// Debug: Log framebuffer status (dev mode only, throttled)
+		if (import.meta.env.DEV && Math.floor(currentTime * 60) % 60 === 0) {
+			const gl = renderer.getContext();
+			const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+			if (status !== gl.FRAMEBUFFER_COMPLETE) {
+				console.error('Framebuffer incomplete:', status);
+			}
+		}
+	});
+
+	onDestroy(() => {
+		// Cleanup resources
+		if (geometry) geometry.dispose();
+		if (material) material.dispose();
+		// Note: useTask automatically unsubscribes when component unmounts
+	});
+</script>
+
+/** * SimulationPass Component * Executes the GPGPU simulation shader each frame * Updates Position
+and Velocity textures via FBO Ping-Pong * Follows "Zero-Garbage" principle: pre-allocates all
+resources */
+
+<!-- This component runs invisibly - no visual output -->

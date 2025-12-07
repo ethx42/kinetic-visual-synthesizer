@@ -125,6 +125,8 @@ export interface UseGPGPUResult {
 	velocityTexture: WebGLRenderTarget;
 	readPosition: () => WebGLRenderTarget;
 	readVelocity: () => WebGLRenderTarget;
+	writePosition: () => WebGLRenderTarget;
+	writeVelocity: () => WebGLRenderTarget;
 	swap: () => void;
 	dispose: () => void;
 }
@@ -314,6 +316,10 @@ export function useGPGPU(config: GPGPUConfig): UseGPGPUResult {
 	const readPosition = () => positionRead;
 	const readVelocity = () => velocityRead;
 
+	// Return current write textures (for simulation rendering)
+	const writePosition = () => positionWrite;
+	const writeVelocity = () => velocityWrite;
+
 	// Cleanup function
 	const dispose = () => {
 		positionA.dispose();
@@ -327,6 +333,8 @@ export function useGPGPU(config: GPGPUConfig): UseGPGPUResult {
 		velocityTexture: velocityRead,
 		readPosition,
 		readVelocity,
+		writePosition,
+		writeVelocity,
 		swap,
 		dispose
 	};
