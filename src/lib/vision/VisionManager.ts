@@ -31,7 +31,6 @@ export class VisionManager {
 	private frameId: number | null = null;
 	private callbacks: VisionManagerCallbacks = {};
 	private lastTimestamp = 0;
-	private isInitialized = false;
 
 	/**
 	 * Initialize vision system with webcam
@@ -64,7 +63,6 @@ export class VisionManager {
 				minTrackingConfidence: VISION.MIN_CONFIDENCE // Lowered from 0.5 - helps maintain tracking during occlusion
 			});
 
-			this.isInitialized = true;
 			this.callbacks.onInitialized?.();
 		} catch (error) {
 			const errorMessage = ErrorHandler.getErrorMessage(error);
@@ -132,6 +130,7 @@ export class VisionManager {
 	 * Stop processing video frames
 	 */
 	stop(): void {
+		// Set flag first to prevent new frames from being scheduled
 		this.isProcessing = false;
 		if (this.frameId !== null) {
 			cancelAnimationFrame(this.frameId);
@@ -153,11 +152,23 @@ export class VisionManager {
 		const elapsed = currentTime - this.lastTimestamp;
 
 		if (elapsed >= VISION.FRAME_INTERVAL_MS && this.videoElement.readyState >= 2) {
+			// Capture references to avoid null checks in async callback
+			const landmarker = this.landmarker;
+			const videoElement = this.videoElement;
+
 			// Process frame asynchronously to avoid blocking render
 			// Use requestIdleCallback if available, otherwise use setTimeout
 			const processAsync = () => {
+				// Double-check that we're still processing and landmarker exists
+				// This prevents errors when camera is disabled during async processing
+				if (!this.isProcessing || !this.landmarker || !this.videoElement) {
+					return;
+				}
+
 				try {
-					const results = this.landmarker!.detectForVideo(this.videoElement!, currentTime);
+					// detectForVideo automatically gets dimensions from video element
+					// The NORM_RECT warning is benign and comes from MediaPipe's internal processing
+					const results = landmarker.detectForVideo(videoElement, currentTime);
 
 					// Extract landmark data
 					const hands: HandLandmarks[] = results.landmarks.map((hand, handIndex) => ({
@@ -174,8 +185,11 @@ export class VisionManager {
 
 					this.callbacks.onLandmarks?.(hands);
 				} catch (error) {
-					const errorMessage = ErrorHandler.getErrorMessage(error);
-					this.handleError(`Frame processing failed: ${errorMessage}`);
+					// Only log error if we're still processing (avoid spam when disabling)
+					if (this.isProcessing) {
+						const errorMessage = ErrorHandler.getErrorMessage(error);
+						this.handleError(`Frame processing failed: ${errorMessage}`);
+					}
 				}
 			};
 
@@ -190,8 +204,10 @@ export class VisionManager {
 			this.lastTimestamp = currentTime;
 		}
 
-		// Continue processing
-		this.frameId = requestAnimationFrame(this.processFrame);
+		// Continue processing only if still active
+		if (this.isProcessing) {
+			this.frameId = requestAnimationFrame(this.processFrame);
+		}
 	};
 
 	/**
