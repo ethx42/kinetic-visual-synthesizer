@@ -7,6 +7,11 @@
 	import SimulationPass from './SimulationPass.svelte';
 	import DebugPlane from './DebugPlane.svelte';
 	import SimulationControls from '../ui/SimulationControls.svelte';
+	import VisionSystem from '../ui/VisionSystem.svelte';
+	import SignalIndicator from '../ui/SignalIndicator.svelte';
+	import ParameterPatchBay from '../ui/ParameterPatchBay.svelte';
+	import HandTrackingDebug from '../ui/HandTrackingDebug.svelte';
+	import CalibrationPanel from '../ui/CalibrationPanel.svelte';
 
 	let webgl2Supported = false;
 	let showDebug = false;
@@ -55,6 +60,21 @@
 
 <!-- UI Controls -->
 <SimulationControls />
+
+<!-- Vision System (hand tracking) -->
+<VisionSystem />
+
+<!-- Signal Indicator -->
+<SignalIndicator />
+
+<!-- Parameter Patch Bay -->
+<ParameterPatchBay />
+
+<!-- Hand Tracking Debug Panel -->
+<HandTrackingDebug />
+
+<!-- Calibration Panel -->
+<CalibrationPanel />
 
 <style>
 	:global(canvas) {

@@ -24,3 +24,29 @@ export const damping = persistent('kvs_damping', 0.99); // Velocity damping fact
 import type { Texture } from 'three';
 export const currentPositionTexture = writable<Texture | null>(null);
 export const currentVelocityTexture = writable<Texture | null>(null);
+
+// Phase 3.4: Multi-Parameter Mapping (Patch Bay)
+// Controls which parameters are controlled by hand tension
+export type PatchTarget = 'entropy' | 'timeScale' | 'colorShift' | 'attractorStrength' | 'none';
+
+export interface PatchMapping {
+	target: PatchTarget;
+	enabled: boolean;
+	min: number;
+	max: number;
+}
+
+// Patch bay configuration (persistent)
+export const patchMappings = persistent<Record<string, PatchMapping>>('kvs_patchMappings', {
+	entropy: { target: 'entropy', enabled: true, min: 0.0, max: 1.0 },
+	timeScale: { target: 'timeScale', enabled: false, min: 0.5, max: 2.0 },
+	colorShift: { target: 'colorShift', enabled: false, min: 0.0, max: 6.28318 }, // 2π
+	attractorStrength: { target: 'attractorStrength', enabled: false, min: 0.1, max: 2.0 }
+});
+
+// Computed values from patch bay (derived from tension)
+export const computedTimeScale = writable(1.0);
+export const computedColorShift = writable(0.0);
+
+// Camera/Hand tracking enabled (persistent)
+export const cameraEnabled = persistent('kvs_cameraEnabled', true);

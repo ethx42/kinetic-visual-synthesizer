@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { getContext, onMount, onDestroy } from 'svelte';
+	import { get } from 'svelte/store';
 	import { useThrelte, useTask } from '@threlte/core';
 	import {
 		BufferGeometry,
@@ -13,6 +14,7 @@
 		Vector3
 	} from 'three';
 	import { tension } from '$lib/stores/tension';
+	import { handTracking } from '$lib/stores/handTracking';
 	import {
 		vectorFieldType,
 		noiseScale,
@@ -144,11 +146,21 @@
 			return;
 		}
 
+		// Check if signal is lost (occlusion/face crossing)
+		const trackingState = get(handTracking);
+		const signalLost = trackingState.signalLost;
+
 		// Update time (Threlte provides delta in seconds)
-		currentTime += delta;
+		// Freeze time when signal is lost (occlusion/face crossing)
+		// This turns a technical bug into a narrative feature: "Connection interrupted"
+		if (!signalLost) {
+			currentTime += delta;
+		}
+		// else: time is frozen, particles maintain last state
 
 		// Cap delta time to prevent large jumps (max ~30 FPS equivalent)
-		const cappedDelta = Math.min(Math.max(delta, 0.001), 1.0 / 30.0);
+		// When signal is lost, set delta to 0 to freeze physics
+		const cappedDelta = signalLost ? 0.0 : Math.min(Math.max(delta, 0.001), 1.0 / 30.0);
 
 		// Get current read and write textures (ping-pong)
 		const positionRead = gpgpu.readPosition();
