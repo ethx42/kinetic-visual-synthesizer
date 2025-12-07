@@ -24,6 +24,7 @@ import {
 	Vector3
 } from 'three';
 import type { GPGPUConfig } from '../types';
+import { ErrorHandler } from '$lib/utils/errorHandler';
 
 /**
  * Initialize Position texture with random particle positions
@@ -144,15 +145,28 @@ export function useGPGPU(config: GPGPUConfig): UseGPGPUResult {
 	const width = textureSize;
 	const height = textureSize;
 
-	// Detect WebGL2 capability
-	const gl = renderer.getContext();
-	const isWebGL2 = gl instanceof WebGL2RenderingContext;
-	const textureType = isWebGL2 ? FloatType : HalfFloatType;
+	// Detect WebGL2 capability with error handling
+	let gl: WebGLRenderingContext | WebGL2RenderingContext;
+	let isWebGL2: boolean;
+	let textureType: typeof FloatType | typeof HalfFloatType;
 
-	if (!isWebGL2) {
-		console.warn(
-			'WebGL2 not available. Using HalfFloatType with reduced precision. Some artifacts may occur.'
-		);
+	try {
+		gl = renderer.getContext();
+		if (!gl) {
+			throw new Error('WebGL context not available');
+		}
+		isWebGL2 = gl instanceof WebGL2RenderingContext;
+		textureType = isWebGL2 ? FloatType : HalfFloatType;
+
+		if (!isWebGL2) {
+			console.warn(
+				'WebGL2 not available. Using HalfFloatType with reduced precision. Some artifacts may occur.'
+			);
+		}
+	} catch (error) {
+		const errorMessage = ErrorHandler.getErrorMessage(error);
+		console.error('[GPGPU] Failed to initialize WebGL context:', errorMessage);
+		throw new Error(`GPGPU initialization failed: ${errorMessage}`);
 	}
 
 	// Create Ping-Pong FBOs for Position
@@ -339,4 +353,3 @@ export function useGPGPU(config: GPGPUConfig): UseGPGPUResult {
 		dispose
 	};
 }
-

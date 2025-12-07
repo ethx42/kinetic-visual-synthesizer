@@ -10,6 +10,8 @@
 
 import { HandLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import type { HandLandmarks } from './types';
+import { ErrorHandler } from '$lib/utils/errorHandler';
+import { VISION } from '$lib/utils/constants';
 
 export interface VisionManagerCallbacks {
 	onLandmarks?: (hands: HandLandmarks[]) => void;
@@ -57,15 +59,15 @@ export class VisionManager {
 				numHands: 2, // Detect both hands
 				// Lower thresholds for better occlusion handling (hand crossing face)
 				// The FULL model handles occlusion better, but we also lower thresholds
-				minHandDetectionConfidence: 0.4, // Lowered from 0.5 for better occlusion detection
-				minHandPresenceConfidence: 0.4, // Lowered from 0.5
-				minTrackingConfidence: 0.4 // Lowered from 0.5 - helps maintain tracking during occlusion
+				minHandDetectionConfidence: VISION.MIN_CONFIDENCE, // Lowered from 0.5 for better occlusion detection
+				minHandPresenceConfidence: VISION.MIN_CONFIDENCE, // Lowered from 0.5
+				minTrackingConfidence: VISION.MIN_CONFIDENCE // Lowered from 0.5 - helps maintain tracking during occlusion
 			});
 
 			this.isInitialized = true;
 			this.callbacks.onInitialized?.();
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			const errorMessage = ErrorHandler.getErrorMessage(error);
 			this.handleError(`Failed to initialize HandLandmarker: ${errorMessage}`);
 			throw error;
 		}
@@ -102,7 +104,7 @@ export class VisionManager {
 				};
 			});
 		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
+			const errorMessage = ErrorHandler.getErrorMessage(error);
 			this.handleError(`Webcam access failed: ${errorMessage}`);
 			throw error;
 		}
@@ -146,11 +148,11 @@ export class VisionManager {
 			return;
 		}
 
-		// Capture frame at ~30 FPS (every ~33ms)
+		// Capture frame at target FPS (VISION.TARGET_FPS)
 		const currentTime = performance.now();
 		const elapsed = currentTime - this.lastTimestamp;
 
-		if (elapsed >= 33 && this.videoElement.readyState >= 2) {
+		if (elapsed >= VISION.FRAME_INTERVAL_MS && this.videoElement.readyState >= 2) {
 			// Process frame asynchronously to avoid blocking render
 			// Use requestIdleCallback if available, otherwise use setTimeout
 			const processAsync = () => {
@@ -172,7 +174,7 @@ export class VisionManager {
 
 					this.callbacks.onLandmarks?.(hands);
 				} catch (error) {
-					const errorMessage = error instanceof Error ? error.message : String(error);
+					const errorMessage = ErrorHandler.getErrorMessage(error);
 					this.handleError(`Frame processing failed: ${errorMessage}`);
 				}
 			};

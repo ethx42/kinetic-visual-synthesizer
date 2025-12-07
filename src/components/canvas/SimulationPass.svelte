@@ -25,6 +25,7 @@
 		currentPositionTexture,
 		currentVelocityTexture
 	} from '$lib/stores/settings';
+	import { SIMULATION, SHADER } from '$lib/utils/constants';
 	import simVert from '$shaders/simulation/sim.vert.glsl?raw';
 	import simFrag from '$shaders/simulation/sim.frag.glsl?raw';
 	import noiseFrag from '$shaders/simulation/noise.glsl?raw';
@@ -45,11 +46,18 @@
 	let currentTime = 0;
 	let isInitialized = false;
 
+	// Pre-allocated debug buffer (Zero-Garbage principle)
+	let debugBuffer: Float32Array | null = null;
+
 	onMount(() => {
 		if (!gpgpu) {
-			console.error('GPGPU context not found. Make sure SimulationPass is inside GPGPUSimulation.');
-			return;
+			throw new Error(
+				'GPGPU context not found. Make sure SimulationPass is inside GPGPUSimulation.'
+			);
 		}
+
+		// Pre-allocate debug buffer (Zero-Garbage principle)
+		debugBuffer = new Float32Array(4);
 
 		// Create fullscreen quad geometry
 		geometry = new BufferGeometry();
@@ -80,15 +88,16 @@
 				uPositionTexture: { value: positionTexture.texture },
 				uVelocityTexture: { value: velocityTexture.texture },
 				uTime: { value: 0.0 },
-				uDeltaTime: { value: 1.0 / 60.0 },
+				uDeltaTime: { value: 1.0 / SIMULATION.TARGET_FPS },
 				uEntropy: { value: 0.0 },
 				uNoiseScale: { value: 1.0 },
 				uNoiseSpeed: { value: 0.5 },
 				uNoiseStrength: { value: 8.0 },
+				uPositionScale: { value: SHADER.POSITION_SCALE_DEFAULT }, // Position scale for curl noise
 				uFieldType: { value: 0.0 }, // 0 = CURL_NOISE, 1 = LORENZ, 2 = AIZAWA
 				uAttractorStrength: { value: 0.5 },
 				uDamping: { value: 0.01 }, // 0.01 = 1% damping per frame (very smooth)
-				uBoundarySize: { value: 5.0 }, // Boundary size for particle wrapping (5 units from center)
+				uBoundarySize: { value: SHADER.BOUNDARY_DEFAULT }, // Boundary size for particle wrapping
 				uOutputMode: { value: 0.0 } // 0 = position, 1 = velocity
 			}
 		});
@@ -107,24 +116,25 @@
 		if (import.meta.env.DEV) {
 			const handleKeyPress = (e: KeyboardEvent) => {
 				if (e.key === 'p' || e.key === 'P') {
+					if (!debugBuffer) return; // Guard clause
+
 					const gl = renderer.getContext();
 					const width = 1024; // Texture size
 					const height = 1024;
 
 					// Read from current velocity texture
 					const velocityTexture = gpgpu.readVelocity();
-					const buffer = new Float32Array(4); // Read 1 pixel (RGBA)
 
 					renderer.setRenderTarget(velocityTexture);
-					gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.FLOAT, buffer);
+					gl.readPixels(width / 2, height / 2, 1, 1, gl.RGBA, gl.FLOAT, debugBuffer);
 					renderer.setRenderTarget(null);
 
 					console.log('🔍 PARTICLE DIAGNOSTIC (Center Pixel):');
 					console.log(
-						`Velocity: [x: ${buffer[0].toFixed(5)}, y: ${buffer[1].toFixed(5)}, z: ${buffer[2].toFixed(5)}]`
+						`Velocity: [x: ${debugBuffer[0].toFixed(5)}, y: ${debugBuffer[1].toFixed(5)}, z: ${debugBuffer[2].toFixed(5)}]`
 					);
 					console.log(
-						`Magnitude: ${Math.sqrt(buffer[0] * buffer[0] + buffer[1] * buffer[1] + buffer[2] * buffer[2]).toFixed(5)}`
+						`Magnitude: ${Math.sqrt(debugBuffer[0] * debugBuffer[0] + debugBuffer[1] * debugBuffer[1] + debugBuffer[2] * debugBuffer[2]).toFixed(5)}`
 					);
 				}
 			};
@@ -160,7 +170,9 @@
 
 		// Cap delta time to prevent large jumps (max ~30 FPS equivalent)
 		// When signal is lost, set delta to 0 to freeze physics
-		const cappedDelta = signalLost ? 0.0 : Math.min(Math.max(delta, 0.001), 1.0 / 30.0);
+		const cappedDelta = signalLost
+			? 0.0
+			: Math.min(Math.max(delta, SIMULATION.MIN_DELTA_TIME), SIMULATION.MAX_DELTA_TIME);
 
 		// Get current read and write textures (ping-pong)
 		const positionRead = gpgpu.readPosition();

@@ -15,6 +15,7 @@
 		currentPositionTexture,
 		currentVelocityTexture
 	} from '$lib/stores/settings';
+	import { SHADER } from '$lib/utils/constants';
 	import particleVert from '$shaders/rendering/particle.vert.glsl?raw';
 	import particleFrag from '$shaders/rendering/particle.frag.glsl?raw';
 	import type { UseGPGPUResult } from '$lib/gpgpu/hooks/useGPGPU';
@@ -35,8 +36,9 @@
 
 	onMount(() => {
 		if (!gpgpu) {
-			console.error('GPGPU context not found. Make sure ParticleSystem is inside GPGPUSimulation.');
-			return;
+			throw new Error(
+				'GPGPU context not found. Make sure ParticleSystem is inside GPGPUSimulation.'
+			);
 		}
 
 		// Create buffer geometry with indices
@@ -75,8 +77,8 @@
 				uPositionTexture: { value: positionTexture.texture },
 				uVelocityTexture: { value: velocityTexture.texture },
 				uTextureSize: { value: textureSize },
-				// VISIBILITY: Increased point size from 0.002 to 0.015
-				uPointSize: { value: 0.03 } // DOUBLED for maximum visibility
+				uPointSize: { value: 0.03 },
+				uPointSizeScale: { value: SHADER.POINT_SIZE_SCALE } // Distance attenuation scale
 			},
 			blending: AdditiveBlending,
 			depthTest: true,

@@ -6,6 +6,7 @@
 
 import { writable } from 'svelte/store';
 import type { HandLandmarks } from '$lib/vision/types';
+import { VISION } from '$lib/utils/constants';
 
 export interface HandTrackingState {
 	hands: HandLandmarks[];
@@ -39,7 +40,7 @@ export function updateHandTracking(hands: HandLandmarks[]): void {
 	const confidence =
 		hands.length > 0 ? hands.reduce((sum, hand) => sum + hand.confidence, 0) / hands.length : 0;
 
-	const isTracking = hands.length > 0 && confidence > 0.4; // Lower threshold for better occlusion handling
+	const isTracking = hands.length > 0 && confidence > VISION.MIN_CONFIDENCE; // Lower threshold for better occlusion handling
 
 	// Signal is "lost" if we had tracking in previous frame but lost it now
 	// This detects occlusion events (hand crossing face)

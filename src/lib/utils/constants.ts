@@ -1,18 +1,28 @@
 /**
- * Physical constants and configuration values
+ * Simulation Constants
+ * Centralized constants for simulation and rendering
  */
 
-// WebGL2 capability check
-export const REQUIRES_WEBGL2 = true;
+export const SIMULATION = {
+	TARGET_FPS: 60,
+	MAX_DELTA_TIME: 1.0 / 30.0, // Cap to 30 FPS minimum
+	MIN_DELTA_TIME: 0.001
+} as const;
 
-// Default particle system settings
-export const DEFAULT_PARTICLE_COUNT = 1_000_000;
-export const TEXTURE_SIZE_1M = 1024; // 1024x1024 = 1,048,576 particles
+export const VISION = {
+	TARGET_FPS: 30,
+	FRAME_INTERVAL_MS: 1000 / 30,
+	MIN_CONFIDENCE: 0.4
+} as const;
 
-// Simulation constants
-export const DEFAULT_DELTA_TIME = 1 / 60; // 60 FPS
-export const MAX_DELTA_TIME = 1 / 30; // Cap at 30 FPS minimum
+export const SHADER = {
+	POINT_SIZE_SCALE: 300.0, // Distance attenuation scale for point size
+	NOISE_EPSILON: 0.01, // Epsilon for curl noise finite differences
+	BOUNDARY_DEFAULT: 5.0, // Default boundary size for particle wrapping
+	POSITION_SCALE_DEFAULT: 0.35 // Default position scale for curl noise
+} as const;
 
-// Hand tracking constants
-export const TENSION_SMOOTH_STEP_MIN = 0.0;
-export const TENSION_SMOOTH_STEP_MAX = 1.2;
+export const TEXTURE = {
+	DEFAULT_SIZE: 1024, // Default texture size for GPGPU
+	PARTICLE_COUNT_MAX: 1_000_000
+} as const;

@@ -13,6 +13,7 @@ uniform float uEntropy;
 uniform float uNoiseScale;
 uniform float uNoiseSpeed;
 uniform float uNoiseStrength; // Intensity multiplier for curl noise
+uniform float uPositionScale; // Position scale for curl noise (default: 0.35)
 uniform float uFieldType; // 0 = CURL_NOISE, 1 = LORENZ, 2 = AIZAWA
 uniform float uAttractorStrength;
 uniform float uDamping; // Velocity damping factor (0.0 = no damping, 1.0 = full stop)
@@ -41,9 +42,8 @@ void main() {
 		// CURL_NOISE mode: Divergence-free fluid-like flow
 		// Multi-layered curl noise creates balanced, organic motion without directional bias
 		// Scale position to control noise feature size (smaller = larger features)
-		float positionScale = 0.35;
 		// Use multi-layer curl noise for uniform, non-directional flow
-		vectorField = curlNoiseMultiLayer(position * positionScale, uTime, uNoiseScale, uNoiseSpeed) * uNoiseStrength; 
+		vectorField = curlNoiseMultiLayer(position * uPositionScale, uTime, uNoiseScale, uNoiseSpeed) * uNoiseStrength; 
 		
 	} else if (uFieldType < 1.5) {
 		// LORENZ Attractor
@@ -100,17 +100,17 @@ void main() {
 	// Typical values: 0.98-0.99 for smooth fluid motion, 0.95-0.97 for more friction
 	newVelocity *= uDamping;
 
-	// Step 2: Update position using average velocity
+	// Step 2: Update position using average velocity (Velocity Verlet)
 	// p_new = p_old + (v_old + v_new) / 2 * dt
+	// This uses the average of old and new velocity for better stability
 	vec3 avgVelocity = (velocity + newVelocity) * 0.5;
-	vec3 newPosition = position + avgVelocity * uDeltaTime;
 	
 	// Output based on mode
 	if (uOutputMode < 0.5) {
-		// POSITON UPDATE PASS (Step 2)
-		// Explicitly calculate new position using the calculated velocity
-		// p_new = p_old + v_new * dt
-		vec3 finalPosition = position + newVelocity * uDeltaTime;
+		// POSITION UPDATE PASS (Step 2)
+		// Use average velocity for position update (standard Velocity Verlet)
+		// p_new = p_old + (v_old + v_new) / 2 * dt
+		vec3 finalPosition = position + avgVelocity * uDeltaTime;
 		
 		// Boundary checking: wrap particles that go outside the boundary
 		// This prevents particles from disappearing forever

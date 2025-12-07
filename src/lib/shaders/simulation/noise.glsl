@@ -138,6 +138,7 @@ vec3 curlNoise(vec3 p, float scale, float eps) {
 	
 	// Compute partial derivatives using finite differences
 	// We sample noise at offset positions to compute gradients
+	// eps is typically 0.01 for curl noise computation
 	float eps2 = eps * 2.0;
 	
 	// Sample noise at 6 points for gradient computation
@@ -180,7 +181,9 @@ vec3 curlNoiseAnimated(vec3 p, float time, float scale, float speed) {
 		timeOffset * 0.7,
 		timeOffset * 0.3
 	);
-	return curlNoise(animatedP, scale, 0.01);
+	// Epsilon for finite differences (typically 0.01 for curl noise)
+	const float CURL_EPSILON = 0.01;
+	return curlNoise(animatedP, scale, CURL_EPSILON);
 }
 
 /**
