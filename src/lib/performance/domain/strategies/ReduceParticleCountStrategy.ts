@@ -8,7 +8,7 @@ import { BaseDegradationStrategy } from './DegradationStrategy';
 import { get, type Writable } from 'svelte/store';
 
 const MIN_PARTICLE_COUNT = 100_000;
-const REDUCTION_FACTOR = 0.5;
+const REDUCTION_FACTOR = 0.75;
 
 /**
  * Strategy to reduce particle count for performance improvement

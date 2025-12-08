@@ -7,8 +7,8 @@
 import { BaseDegradationStrategy } from './DegradationStrategy';
 import { get, type Writable } from 'svelte/store';
 
-const QUALITY_STEPS = [1.0, 0.75, 0.5, 0.25];
-const MIN_QUALITY = 0.25;
+const QUALITY_STEPS = [1.0, 0.75, 0.5];
+const MIN_QUALITY = 0.5;
 
 /**
  * Strategy to reduce rendering quality for performance improvement

@@ -3,9 +3,11 @@
 	import Shell from '$components/ui/shell/Shell.svelte';
 	import KitchenSink from '$components/ui/KitchenSink.svelte';
 	import UnifiedControlPanel from '$components/ui/UnifiedControlPanel.svelte';
+	import PerformanceMonitor from '$lib/performance/presentation/PerformanceMonitor.svelte';
 </script>
 
 <main>
+	<PerformanceMonitor />
 	<SimulationCanvas />
 	<UnifiedControlPanel />
 	<Shell>

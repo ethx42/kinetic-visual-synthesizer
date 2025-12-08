@@ -58,8 +58,8 @@ export interface ThresholdConfig {
 export const DEFAULT_THRESHOLDS: PerformanceThresholds = {
 	excellent: { minFps: 58, maxFrameTime: 17 },
 	good: { minFps: 45, maxFrameTime: 22 },
-	acceptable: { minFps: 30, maxFrameTime: 33 },
-	poor: { minFps: 20, maxFrameTime: 50 }
+	acceptable: { minFps: 25, maxFrameTime: 40 }, // Lowered from 30 to tolerate dips
+	poor: { minFps: 15, maxFrameTime: 66 } // Lowered from 20 to delay critical mode
 };
 
 /**

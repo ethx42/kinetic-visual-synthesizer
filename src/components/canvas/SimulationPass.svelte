@@ -25,6 +25,7 @@
 		currentPositionTexture,
 		currentVelocityTexture
 	} from '$lib/stores/settings';
+	import { fps, renderCalls } from '$lib/stores/telemetry';
 	import { SIMULATION, SHADER } from '$lib/utils/constants';
 	import simVert from '$shaders/simulation/sim.vert.glsl?raw';
 	import simFrag from '$shaders/simulation/sim.frag.glsl?raw';
@@ -150,7 +151,12 @@
 	// Use Threlte's useTask hook for reactive frame updates
 	// This replaces requestAnimationFrame and integrates with Threlte's lifecycle
 	// The task runs every frame before rendering (simulation updates happen first)
-	useTask('simulation-update', (delta) => {
+	useTask((delta) => {
+		// Update telemetry
+		const currentFps = delta > 0 ? 1 / delta : 0;
+		fps.set(currentFps);
+		renderCalls.set(2); // 2 passes per frame (position + velocity)
+
 		// Skip if not initialized
 		if (!isInitialized || !scene || !camera || !material || !gpgpu) {
 			return;

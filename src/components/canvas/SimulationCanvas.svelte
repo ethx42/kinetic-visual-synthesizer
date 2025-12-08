@@ -8,6 +8,7 @@
 	import DebugPlane from './DebugPlane.svelte';
 	import VisionSystem from '../ui/VisionSystem.svelte';
 	import { getRotationCursor } from '$lib/ui/cursors/RotationCursor';
+	import { particleCount, qualityLevel } from '$lib/stores/settings';
 
 	let webgl2Supported = $state(false);
 	let showDebug = $state(false);
@@ -158,7 +159,7 @@
 	class:dragging={isDragging}
 	style="--rotation-cursor: url('{rotationCursor}') 16 16, grab;"
 >
-	<Canvas>
+	<Canvas dpr={$qualityLevel}>
 		{#if !webgl2Supported}
 			<div
 				style="position: absolute; top: 20px; left: 20px; color: #ff6b6b; font-family: monospace; z-index: 1000;"
@@ -173,11 +174,13 @@
 		<T.AmbientLight intensity={0.5} />
 
 		<!-- GPGPU Simulation System -->
-		<GPGPUSimulation>
-			<SimulationPass />
-			<ParticleSystem />
-			<DebugPlane visible={showDebug} />
-		</GPGPUSimulation>
+		{#key $particleCount}
+			<GPGPUSimulation>
+				<SimulationPass />
+				<ParticleSystem />
+				<DebugPlane visible={showDebug} />
+			</GPGPUSimulation>
+		{/key}
 	</Canvas>
 </div>
 
