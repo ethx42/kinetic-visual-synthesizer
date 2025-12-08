@@ -6,7 +6,7 @@
  */
 
 import { VisionUseCase } from '../application/use-cases/VisionUseCase';
-import { MediaPipeMainThreadAdapter } from '../infrastructure/adapters/MediaPipeMainThreadAdapter';
+import { VisionWorkerAdapter } from '../infrastructure/adapters/VisionWorkerAdapter';
 import { FrameCaptureAdapter } from '../infrastructure/adapters/FrameCaptureAdapter';
 import type { VisionFrame } from '../domain/entities/VisionFrame';
 import type { SignalAnalysisResult } from '../domain/services/SignalAnalyzer';
@@ -62,7 +62,7 @@ export class VisionFacade {
 			return;
 		}
 
-		this.mediaPipeAdapter = new MediaPipeMainThreadAdapter();
+		this.mediaPipeAdapter = new VisionWorkerAdapter();
 		this.frameCaptureAdapter = new FrameCaptureAdapter();
 
 		this.useCase = new VisionUseCase(this.frameCaptureAdapter, this.mediaPipeAdapter);
