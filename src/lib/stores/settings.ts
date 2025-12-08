@@ -49,4 +49,4 @@ export const computedTimeScale = writable(1.0);
 export const computedColorShift = writable(0.0);
 
 // Camera/Hand tracking enabled (persistent)
-export const cameraEnabled = persistent('kvs_cameraEnabled', true);
+export const cameraEnabled = persistent('kvs_cameraEnabled', false);
