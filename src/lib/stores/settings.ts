@@ -51,3 +51,11 @@ export const computedColorShift = writable(0.0);
 // Camera/Hand tracking enabled (persistent)
 // Default to false to prevent immediate camera requests on mobile
 export const cameraEnabled = persistent('kvs_cameraEnabled', false);
+
+// Performance Fallback System stores
+// Post-processing enabled state (for DisablePostProcessingStrategy)
+export const postProcessingEnabled = writable(true);
+
+// Quality level (for ReduceQualityStrategy)
+// Steps: 1.0 (full), 0.75, 0.5, 0.25 (minimum)
+export const qualityLevel = writable(1.0);
