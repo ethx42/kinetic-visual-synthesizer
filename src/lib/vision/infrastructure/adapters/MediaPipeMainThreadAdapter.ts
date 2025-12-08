@@ -3,11 +3,11 @@
  * Adapter for running MediaPipe on the main thread
  *
  * Infrastructure Layer - Implements IVisionWorkerAdapter interface
- * 
+ *
  * Note: MediaPipe Tasks Vision doesn't work well with ES module workers
  * (importScripts conflict). This adapter runs MediaPipe on the main thread
  * but uses requestIdleCallback to minimize impact on rendering performance.
- * 
+ *
  * The adapter implements the same interface as VisionWorkerAdapter, allowing
  * for easy swapping if MediaPipe ever supports ES module workers.
  */
@@ -114,8 +114,7 @@ export class MediaPipeMainThreadAdapter implements IVisionWorkerAdapter {
 							y: landmark.y,
 							z: landmark.z ?? 0
 						})),
-						confidence:
-							(handednessData as Array<{ score?: number }>)?.[0]?.score ?? 0.5,
+						confidence: (handednessData as Array<{ score?: number }>)?.[0]?.score ?? 0.5,
 						handedness
 					};
 				});
@@ -127,6 +126,11 @@ export class MediaPipeMainThreadAdapter implements IVisionWorkerAdapter {
 					timestamp,
 					processingTimeMs
 				};
+
+				// Debug: Log if we have hands detected (dev mode only)
+				// if (import.meta.env.DEV && hands.length > 0) {
+				// 	console.log(`[MediaPipeMainThreadAdapter] Detected ${hands.length} hand(s)`);
+				// }
 
 				this.callbacks.onResult?.(result);
 			} catch (error) {
