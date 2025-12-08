@@ -99,6 +99,7 @@
 		width: 100%;
 		display: flex;
 		justify-content: center;
+		margin-bottom: 4px;
 	}
 
 	.dvr-monitor-frame {

@@ -15,59 +15,71 @@
 	});
 </script>
 
-<div class="tension-display-small">
-	Tension: <span class="value">{$tension.toFixed(2)}</span>
+<div class="patchbay-container">
+	<div class="tension-display-small">
+		Tension: <span class="value">{$tension.toFixed(2)}</span>
+	</div>
+
+	<div class="patch-items">
+		{#each Object.entries($patchMappings) as [key, mapping]}
+			<div class="patch-item" class:enabled={mapping.enabled}>
+				<div class="patch-header">
+					<label class="patch-label" for="patch-{key}">
+						<input
+							id="patch-{key}"
+							type="checkbox"
+							checked={mapping.enabled}
+							onchange={() => togglePatch(key)}
+						/>
+						<span>{key}</span>
+					</label>
+				</div>
+				{#if mapping.enabled && mapping.target !== 'none'}
+					<div class="patch-controls">
+						<div class="range-control">
+							<label for="min-{key}">Min: {mapping.min.toFixed(2)}</label>
+							<input
+								id="min-{key}"
+								type="range"
+								min="0"
+								max={mapping.target === 'colorShift' ? '6.28' : '2'}
+								step="0.01"
+								value={mapping.min}
+								oninput={(e) => updatePatchRange(key, 'min', parseFloat(e.currentTarget.value))}
+							/>
+						</div>
+						<div class="range-control">
+							<label for="max-{key}">Max: {mapping.max.toFixed(2)}</label>
+							<input
+								id="max-{key}"
+								type="range"
+								min="0"
+								max={mapping.target === 'colorShift' ? '6.28' : '5'}
+								step="0.01"
+								value={mapping.max}
+								oninput={(e) => updatePatchRange(key, 'max', parseFloat(e.currentTarget.value))}
+							/>
+						</div>
+					</div>
+				{/if}
+			</div>
+		{/each}
+	</div>
 </div>
 
-{#each Object.entries($patchMappings) as [key, mapping]}
-	<div class="patch-item" class:enabled={mapping.enabled}>
-		<div class="patch-header">
-			<label class="patch-label" for="patch-{key}">
-				<input
-					id="patch-{key}"
-					type="checkbox"
-					checked={mapping.enabled}
-					onchange={() => togglePatch(key)}
-				/>
-				<span>{key}</span>
-			</label>
-		</div>
-		{#if mapping.enabled && mapping.target !== 'none'}
-			<div class="patch-controls">
-				<div class="range-control">
-					<label for="min-{key}">Min: {mapping.min.toFixed(2)}</label>
-					<input
-						id="min-{key}"
-						type="range"
-						min="0"
-						max={mapping.target === 'colorShift' ? '6.28' : '2'}
-						step="0.01"
-						value={mapping.min}
-						oninput={(e) => updatePatchRange(key, 'min', parseFloat(e.currentTarget.value))}
-					/>
-				</div>
-				<div class="range-control">
-					<label for="max-{key}">Max: {mapping.max.toFixed(2)}</label>
-					<input
-						id="max-{key}"
-						type="range"
-						min="0"
-						max={mapping.target === 'colorShift' ? '6.28' : '5'}
-						step="0.01"
-						value={mapping.max}
-						oninput={(e) => updatePatchRange(key, 'max', parseFloat(e.currentTarget.value))}
-					/>
-				</div>
-			</div>
-		{/if}
-	</div>
-{/each}
-
 <style>
+	.patchbay-container {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		height: 100%;
+		overflow: hidden;
+	}
+
 	.tension-display-small {
 		font-size: 10px;
 		color: rgba(255, 255, 255, 0.7);
-		margin-bottom: 8px;
+		flex-shrink: 0;
 		font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
 	}
 
@@ -77,12 +89,38 @@
 		font-variant-numeric: tabular-nums;
 	}
 
+	.patch-items {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+		overflow-x: hidden;
+		scrollbar-width: thin;
+		scrollbar-color: rgba(147, 197, 253, 0.2) transparent;
+	}
+
+	.patch-items::-webkit-scrollbar {
+		width: 4px;
+	}
+
+	.patch-items::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.patch-items::-webkit-scrollbar-thumb {
+		background: rgba(147, 197, 253, 0.2);
+		border-radius: 2px;
+	}
+
 	.patch-item {
-		padding: 10px;
+		padding: 6px;
 		background: rgba(255, 255, 255, 0.03);
 		border: 1px solid rgba(255, 255, 255, 0.1);
 		border-radius: 6px;
 		transition: all 0.2s;
+		flex-shrink: 0;
 	}
 
 	.patch-item.enabled {
@@ -94,7 +132,7 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		margin-bottom: 8px;
+		margin-bottom: 4px;
 	}
 
 	.patch-label {
@@ -117,8 +155,8 @@
 	.patch-controls {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
-		margin-top: 8px;
+		gap: 4px;
+		margin-top: 4px;
 	}
 
 	.range-control {

@@ -72,13 +72,24 @@ export class VisionManager {
 
 		// Request webcam access
 		try {
-			this.stream = await navigator.mediaDevices.getUserMedia({
-				video: {
-					width: { ideal: 640 },
-					height: { ideal: 480 },
-					facingMode: 'user'
-				}
-			});
+			try {
+				this.stream = await navigator.mediaDevices.getUserMedia({
+					video: {
+						width: { ideal: 640 },
+						height: { ideal: 480 },
+						facingMode: 'user'
+					}
+				});
+			} catch (err) {
+				console.warn(
+					'[VisionManager] Preferred camera constraints failed, falling back to default video',
+					err
+				);
+				// Fallback to any available video device
+				this.stream = await navigator.mediaDevices.getUserMedia({
+					video: true
+				});
+			}
 
 			// Create video element for capture
 			this.videoElement = document.createElement('video');

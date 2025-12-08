@@ -119,7 +119,8 @@
 
 	// Toggle debug video with 'V' key
 	function handleKeyPress(e: KeyboardEvent) {
-		if (e.key === 'v' || e.key === 'V') {
+		// Only allow debug video if camera is enabled
+		if ($cameraEnabled && (e.key === 'v' || e.key === 'V')) {
 			showDebugVideo = !showDebugVideo;
 		}
 	}
@@ -148,7 +149,7 @@
 {/if}
 
 <!-- Error Display -->
-{#if error}
+{#if error && $cameraEnabled}
 	<div class="error-overlay">
 		<div class="error-message">
 			⚠️ Vision System Error: {error}
@@ -157,7 +158,12 @@
 {/if}
 
 <!-- Status Indicator -->
-<div class="status-indicator" class:initialized={isInitialized} class:disabled={!$cameraEnabled}>
+<div
+	class="status-indicator"
+	class:initialized={isInitialized}
+	class:disabled={!$cameraEnabled}
+	style:display={$cameraEnabled ? 'flex' : 'none'}
+>
 	<span class="status-dot"></span> Vision {$cameraEnabled ? '' : '(Disabled)'}
 </div>
 

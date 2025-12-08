@@ -8,36 +8,45 @@
 	import { cameraEnabled } from '$lib/stores/settings';
 </script>
 
-<div class="control-row">
-	<label class="toggle-label">
-		<input
-			type="checkbox"
-			checked={$cameraEnabled}
-			onchange={(e) => cameraEnabled.set(e.currentTarget.checked)}
-		/>
-		<span>CAMERA</span>
-	</label>
-</div>
+<div class="controls-grid">
+	<div class="control-row">
+		<label class="toggle-label">
+			<input
+				type="checkbox"
+				checked={$cameraEnabled}
+				onchange={(e) => cameraEnabled.set(e.currentTarget.checked)}
+			/>
+			<span>CAMERA</span>
+		</label>
+	</div>
 
-<div class="status-row">
-	<div class="status-indicator" class:active={$handTracking.isTracking}></div>
-	<span class="status-text">{$handTracking.isTracking ? 'ACTIVE' : 'INACTIVE'}</span>
-</div>
+	<div class="status-row">
+		<div class="status-indicator" class:active={$handTracking.isTracking}></div>
+		<span class="status-text">{$handTracking.isTracking ? 'ACTIVE' : 'INACTIVE'}</span>
+	</div>
 
-<div class="tension-display">
-	<div class="tension-label">TENSION</div>
-	<div class="tension-value">{$tension.toFixed(2)}</div>
-	<div class="tension-bar">
-		<div class="tension-fill" style="width: {($tension * 100).toFixed(0)}%"></div>
+	<div class="metric-row">
+		<span class="metric-label">CONF</span>
+		<span class="metric-value">{($handTracking.confidence * 100).toFixed(0)}%</span>
+	</div>
+
+	<div class="tension-display">
+		<div class="tension-label">TENSION</div>
+		<div class="tension-value">{$tension.toFixed(2)}</div>
+		<div class="tension-bar">
+			<div class="tension-fill" style="width: {($tension * 100).toFixed(0)}%"></div>
+		</div>
 	</div>
 </div>
 
-<div class="metric-row">
-	<span class="metric-label">CONF</span>
-	<span class="metric-value">{($handTracking.confidence * 100).toFixed(0)}%</span>
-</div>
-
 <style>
+	.controls-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		height: 100%;
+	}
+
 	.control-row {
 		display: flex;
 		align-items: center;
@@ -92,7 +101,9 @@
 	.tension-display {
 		display: flex;
 		flex-direction: column;
-		gap: 6px;
+		gap: 3px;
+		flex: 1;
+		justify-content: center;
 	}
 
 	.tension-label {
@@ -103,11 +114,11 @@
 	}
 
 	.tension-value {
-		font-size: 16px;
+		font-size: 14px;
 		font-weight: 600;
 		font-variant-numeric: tabular-nums;
 		color: rgba(147, 197, 253, 0.9);
-		line-height: 1;
+		line-height: 1.2;
 		font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
 	}
 

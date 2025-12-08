@@ -1,9 +1,16 @@
 <script lang="ts">
 	import SimulationCanvas from '$components/canvas/SimulationCanvas.svelte';
+	import Shell from '$components/ui/shell/Shell.svelte';
+	import KitchenSink from '$components/ui/KitchenSink.svelte';
+	import UnifiedControlPanel from '$components/ui/UnifiedControlPanel.svelte';
 </script>
 
 <main>
 	<SimulationCanvas />
+	<UnifiedControlPanel />
+	<Shell>
+		<KitchenSink />
+	</Shell>
 </main>
 
 <style>

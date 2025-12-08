@@ -7,7 +7,6 @@
 	import SimulationPass from './SimulationPass.svelte';
 	import DebugPlane from './DebugPlane.svelte';
 	import VisionSystem from '../ui/VisionSystem.svelte';
-	import UnifiedControlPanel from '../ui/UnifiedControlPanel.svelte';
 	import { getRotationCursor } from '$lib/ui/cursors/RotationCursor';
 
 	let webgl2Supported = $state(false);
@@ -184,9 +183,6 @@
 
 <!-- Vision System (hand tracking) -->
 <VisionSystem />
-
-<!-- Unified Control Panel (all controls in one draggable tab) -->
-<UnifiedControlPanel />
 
 <style>
 	.canvas-wrapper {

@@ -16,139 +16,167 @@
 	const calibrationLogic = useCalibration();
 </script>
 
-<div class="metric-row">
-	<span class="metric-label">Normalized Distance:</span>
-	<span class="metric-value">{$normalizedDistance.toFixed(3)}</span>
-</div>
-<div class="metric-row">
-	<span class="metric-label">Raw Tension:</span>
-	<span class="metric-value">{$rawTension.toFixed(3)}</span>
-</div>
-<div class="metric-row">
-	<span class="metric-label">Smoothed Tension:</span>
-	<span class="metric-value highlight">{$tension.toFixed(3)}</span>
-</div>
+<div class="calibration-container">
+	<div class="metrics-group">
+		<div class="metric-row">
+			<span class="metric-label">Norm Dist:</span>
+			<span class="metric-value">{$normalizedDistance.toFixed(3)}</span>
+		</div>
+		<div class="metric-row">
+			<span class="metric-label">Raw:</span>
+			<span class="metric-value">{$rawTension.toFixed(3)}</span>
+		</div>
+		<div class="metric-row">
+			<span class="metric-label">Smooth:</span>
+			<span class="metric-value highlight">{$tension.toFixed(3)}</span>
+		</div>
+	</div>
 
-<div class="control-group">
-	<label for="smoothstep-min">
-		Smoothstep Min: <span class="value">{$calibration.smoothstepMin.toFixed(3)}</span>
-	</label>
-	<input
-		id="smoothstep-min"
-		type="range"
-		min="0"
-		max="2"
-		step="0.01"
-		value={$calibration.smoothstepMin}
-		oninput={(e) => {
-			const newValue = parseFloat(e.currentTarget.value);
-			calibration.set({
-				smoothstepMin: newValue,
-				smoothstepMax: $calibration.smoothstepMax,
-				smoothingAlpha: $calibration.smoothingAlpha,
-				calibrationMode: $calibration.calibrationMode
-			});
-		}}
-	/>
-</div>
+	<div class="controls-group">
+		<div class="control-group">
+			<label for="smoothstep-min">
+				Smoothstep Min: <span class="value">{$calibration.smoothstepMin.toFixed(3)}</span>
+			</label>
+			<input
+				id="smoothstep-min"
+				type="range"
+				min="0"
+				max="2"
+				step="0.01"
+				value={$calibration.smoothstepMin}
+				oninput={(e) => {
+					const newValue = parseFloat(e.currentTarget.value);
+					calibration.set({
+						smoothstepMin: newValue,
+						smoothstepMax: $calibration.smoothstepMax,
+						smoothingAlpha: $calibration.smoothingAlpha,
+						calibrationMode: $calibration.calibrationMode
+					});
+				}}
+			/>
+		</div>
 
-<div class="control-group">
-	<label for="smoothstep-max">
-		Smoothstep Max: <span class="value">{$calibration.smoothstepMax.toFixed(3)}</span>
-	</label>
-	<input
-		id="smoothstep-max"
-		type="range"
-		min="0"
-		max="3"
-		step="0.01"
-		value={$calibration.smoothstepMax}
-		oninput={(e) => {
-			const newValue = parseFloat(e.currentTarget.value);
-			calibration.set({
-				smoothstepMin: $calibration.smoothstepMin,
-				smoothstepMax: newValue,
-				smoothingAlpha: $calibration.smoothingAlpha,
-				calibrationMode: $calibration.calibrationMode
-			});
-		}}
-	/>
-</div>
+		<div class="control-group">
+			<label for="smoothstep-max">
+				Smoothstep Max: <span class="value">{$calibration.smoothstepMax.toFixed(3)}</span>
+			</label>
+			<input
+				id="smoothstep-max"
+				type="range"
+				min="0"
+				max="3"
+				step="0.01"
+				value={$calibration.smoothstepMax}
+				oninput={(e) => {
+					const newValue = parseFloat(e.currentTarget.value);
+					calibration.set({
+						smoothstepMin: $calibration.smoothstepMin,
+						smoothstepMax: newValue,
+						smoothingAlpha: $calibration.smoothingAlpha,
+						calibrationMode: $calibration.calibrationMode
+					});
+				}}
+			/>
+		</div>
 
-<div class="control-group">
-	<label for="smoothing-alpha">
-		Smoothing Alpha: <span class="value">{$calibration.smoothingAlpha.toFixed(2)}</span>
-	</label>
-	<input
-		id="smoothing-alpha"
-		type="range"
-		min="0"
-		max="1"
-		step="0.01"
-		value={$calibration.smoothingAlpha}
-		oninput={(e) => {
-			const newValue = parseFloat(e.currentTarget.value);
-			calibration.set({
-				smoothstepMin: $calibration.smoothstepMin,
-				smoothstepMax: $calibration.smoothstepMax,
-				smoothingAlpha: newValue,
-				calibrationMode: $calibration.calibrationMode
-			});
-		}}
-	/>
-</div>
+		<div class="control-group">
+			<label for="smoothing-alpha">
+				Smoothing Alpha: <span class="value">{$calibration.smoothingAlpha.toFixed(2)}</span>
+			</label>
+			<input
+				id="smoothing-alpha"
+				type="range"
+				min="0"
+				max="1"
+				step="0.01"
+				value={$calibration.smoothingAlpha}
+				oninput={(e) => {
+					const newValue = parseFloat(e.currentTarget.value);
+					calibration.set({
+						smoothstepMin: $calibration.smoothstepMin,
+						smoothstepMax: $calibration.smoothstepMax,
+						smoothingAlpha: newValue,
+						calibrationMode: $calibration.calibrationMode
+					});
+				}}
+			/>
+		</div>
+	</div>
 
-{#if !calibrationState.isCalibrating}
-	<button class="btn-primary" onclick={() => calibrationLogic.startCalibration(calibrationState)}>
-		Start Auto Calibration
-	</button>
-{:else}
-	<div class="calibration-steps">
-		<button
-			class="btn-secondary"
-			onclick={() => calibrationLogic.captureOpenHand(calibrationState)}
-		>
-			1. Capture Open Hand
-		</button>
-		{#if calibrationState.openHandValue > 0}
-			<span class="step-value">Captured: {calibrationState.openHandValue.toFixed(3)}</span>
+	<div class="buttons-group">
+		{#if !calibrationState.isCalibrating}
+			<button
+				class="btn-primary"
+				onclick={() => calibrationLogic.startCalibration(calibrationState)}
+			>
+				Start Auto Calibration
+			</button>
+		{:else}
+			<div class="calibration-steps">
+				<button
+					class="btn-secondary"
+					onclick={() => calibrationLogic.captureOpenHand(calibrationState)}
+				>
+					1. Capture Open Hand
+				</button>
+				{#if calibrationState.openHandValue > 0}
+					<span class="step-value">Captured: {calibrationState.openHandValue.toFixed(3)}</span>
+				{/if}
+				<button
+					class="btn-secondary"
+					onclick={() => calibrationLogic.captureClosedHand(calibrationState)}
+				>
+					2. Capture Closed Hand
+				</button>
+				{#if calibrationState.closedHandValue > 0}
+					<span class="step-value">Captured: {calibrationState.closedHandValue.toFixed(3)}</span>
+				{/if}
+				<button
+					class="btn-primary"
+					onclick={() => calibrationLogic.applyCalibration(calibrationState)}
+					disabled={calibrationState.openHandValue === 0 || calibrationState.closedHandValue === 0}
+				>
+					3. Apply
+				</button>
+				<button
+					class="btn-secondary"
+					onclick={() => calibrationLogic.cancelCalibration(calibrationState)}
+				>
+					Cancel
+				</button>
+			</div>
 		{/if}
+
 		<button
 			class="btn-secondary"
-			onclick={() => calibrationLogic.captureClosedHand(calibrationState)}
+			onclick={() => calibrationLogic.resetCalibration(calibrationState)}
 		>
-			2. Capture Closed Hand
-		</button>
-		{#if calibrationState.closedHandValue > 0}
-			<span class="step-value">Captured: {calibrationState.closedHandValue.toFixed(3)}</span>
-		{/if}
-		<button
-			class="btn-primary"
-			onclick={() => calibrationLogic.applyCalibration(calibrationState)}
-			disabled={calibrationState.openHandValue === 0 || calibrationState.closedHandValue === 0}
-		>
-			3. Apply
-		</button>
-		<button
-			class="btn-secondary"
-			onclick={() => calibrationLogic.cancelCalibration(calibrationState)}
-		>
-			Cancel
+			Reset to Defaults
 		</button>
 	</div>
-{/if}
-
-<button class="btn-secondary" onclick={() => calibrationLogic.resetCalibration(calibrationState)}>
-	Reset to Defaults
-</button>
+</div>
 
 <style>
+	.calibration-container {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		height: 100%;
+		overflow: hidden;
+	}
+
+	.metrics-group {
+		display: flex;
+		flex-direction: column;
+		gap: 3px;
+		flex-shrink: 0;
+	}
+
 	.metric-row {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		font-size: 10px;
-		margin-bottom: 8px;
+		font-size: 9px;
 		font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
 	}
 
@@ -168,11 +196,44 @@
 		font-size: 12px;
 	}
 
+	.controls-group {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+		overflow-x: hidden;
+		scrollbar-width: thin;
+		scrollbar-color: rgba(147, 197, 253, 0.2) transparent;
+	}
+
+	.buttons-group {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		flex-shrink: 0;
+		margin-top: 4px;
+	}
+
+	.controls-group::-webkit-scrollbar {
+		width: 4px;
+	}
+
+	.controls-group::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.controls-group::-webkit-scrollbar-thumb {
+		background: rgba(147, 197, 253, 0.2);
+		border-radius: 2px;
+	}
+
 	.control-group {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
-		margin-bottom: 12px;
+		gap: 4px;
+		flex-shrink: 0;
 	}
 
 	.control-group label {
@@ -256,18 +317,18 @@
 	}
 
 	.btn-primary {
-		padding: 8px 12px;
+		padding: 5px 8px;
 		background: rgba(147, 197, 253, 0.2);
 		border: 1px solid rgba(147, 197, 253, 0.4);
 		color: rgba(255, 255, 255, 0.9);
 		border-radius: 6px;
 		cursor: pointer;
 		font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
-		font-size: 11px;
+		font-size: 9px;
 		font-weight: 600;
 		transition: all 0.2s;
 		width: 100%;
-		margin-bottom: 8px;
+		margin-bottom: 4px;
 	}
 
 	.btn-primary:hover:not(:disabled) {
@@ -281,17 +342,17 @@
 	}
 
 	.btn-secondary {
-		padding: 6px 10px;
+		padding: 4px 6px;
 		background: rgba(255, 255, 255, 0.05);
 		border: 1px solid rgba(255, 255, 255, 0.1);
 		color: rgba(255, 255, 255, 0.9);
 		border-radius: 6px;
 		cursor: pointer;
 		font-family: 'JetBrains Mono', 'Roboto Mono', monospace;
-		font-size: 10px;
+		font-size: 8px;
 		transition: all 0.2s;
 		width: 100%;
-		margin-bottom: 8px;
+		margin-bottom: 4px;
 	}
 
 	.btn-secondary:hover {
@@ -302,8 +363,8 @@
 	.calibration-steps {
 		display: flex;
 		flex-direction: column;
-		gap: 8px;
-		margin-bottom: 8px;
+		gap: 4px;
+		margin-bottom: 4px;
 	}
 
 	.step-value {
