@@ -77,32 +77,29 @@
 		}
 	});
 
-	useTask(
-		(_delta) => {
-			if (!pipeline || !renderer || !scene || !camera.current || !sceneRenderTarget || !enabled) {
-				return;
-			}
+	useTask('post-processing-pass', (_delta) => {
+		if (!pipeline || !renderer || !scene || !camera.current || !sceneRenderTarget || !enabled) {
+			return;
+		}
 
-			const currentRenderTarget = renderer.getRenderTarget();
+		const currentRenderTarget = renderer.getRenderTarget();
 
-			renderer.setRenderTarget(sceneRenderTarget);
-			renderer.render(scene, camera.current);
+		renderer.setRenderTarget(sceneRenderTarget);
+		renderer.render(scene, camera.current);
 
-			const currentTime = (performance.now() - startTime) / 1000;
-			const width = size.current.width || window.innerWidth;
-			const height = size.current.height || window.innerHeight;
+		const currentTime = (performance.now() - startTime) / 1000;
+		const width = size.current.width || window.innerWidth;
+		const height = size.current.height || window.innerHeight;
 
-			pipeline.render(sceneRenderTarget, {
-				uTime: currentTime,
-				uSignalLost: signalLost,
-				uIntensity: 0.5,
-				uResolution: [width, height]
-			});
+		pipeline.render(sceneRenderTarget, {
+			uTime: currentTime,
+			uSignalLost: signalLost,
+			uIntensity: 0.5,
+			uResolution: [width, height]
+		});
 
-			renderer.setRenderTarget(currentRenderTarget);
-		},
-		{ stage: 'render', order: 100 }
-	);
+		renderer.setRenderTarget(currentRenderTarget);
+	});
 
 	onDestroy(() => {
 		if (pipeline) {
