@@ -13,9 +13,6 @@ import type {
 	WorkerAdapterConfig
 } from '../../application/interfaces/IVisionWorkerAdapter';
 
-// @ts-expect-error - Import worker using Vite's query suffix
-import VisionWorker from '../worker/vision.worker?worker';
-
 /**
  * Worker message types
  */
@@ -88,7 +85,11 @@ export class VisionWorkerAdapter implements IVisionWorkerAdapter {
 	private async doInitialize(config?: WorkerAdapterConfig): Promise<void> {
 		const mergedConfig = { ...DEFAULT_CONFIG, ...config };
 
-		this.worker = new VisionWorker();
+		// Initialize worker as Classic Worker to support importScripts() used by MediaPipe
+		// We use new URL() pattern which Vite recognizes and bundles appropriately
+		this.worker = new Worker(new URL('../worker/vision.worker.ts', import.meta.url), {
+			type: 'classic'
+		});
 
 		return new Promise<void>((resolve, reject) => {
 			if (!this.worker) {
