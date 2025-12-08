@@ -1,6 +1,7 @@
 /**
  * Hand tension state store (0.0-1.0)
  * Maps to entropy uniform in simulation shader
+ * Note: Not persistent - resets on reload (will be controlled by hand tracking)
  */
 import { writable } from 'svelte/store';
 

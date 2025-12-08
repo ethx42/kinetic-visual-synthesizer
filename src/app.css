@@ -1,79 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global CSS Variables - Must be outside @layer for proper scope */
 :root {
-	font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-	line-height: 1.5;
-	font-weight: 400;
+	--noise-pattern: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
 
-	color-scheme: light dark;
-	color: rgba(255, 255, 255, 0.87);
-	background-color: #242424;
-
-	font-synthesis: none;
-	text-rendering: optimizeLegibility;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
+	/* Centralized transparency & blur control - adjust these values to change globally */
+	--glass-opacity-top: 0.2; /* Top gradient opacity (0.0 = fully transparent, 1.0 = opaque) */
+	--glass-opacity-bottom: 0.3; /* Bottom gradient opacity */
+	--glass-blur: 5px; /* Backdrop blur amount (0px = no blur, higher = more blur) */
+	--glass-saturate: 150%; /* Backdrop saturation (100% = normal, higher = more saturated) */
 }
 
-a {
-	font-weight: 500;
-	color: #646cff;
-	text-decoration: inherit;
-}
-a:hover {
-	color: #535bf2;
-}
-
-body {
-	margin: 0;
-	display: flex;
-	place-items: center;
-	min-width: 320px;
-	min-height: 100vh;
-}
-
-h1 {
-	font-size: 3.2em;
-	line-height: 1.1;
-}
-
-.card {
-	padding: 2em;
-}
-
-#app {
-	max-width: 1280px;
-	margin: 0 auto;
-	padding: 2rem;
-	text-align: center;
-}
-
-button {
-	border-radius: 8px;
-	border: 1px solid transparent;
-	padding: 0.6em 1.2em;
-	font-size: 1em;
-	font-weight: 500;
-	font-family: inherit;
-	background-color: #1a1a1a;
-	cursor: pointer;
-	transition: border-color 0.25s;
-}
-button:hover {
-	border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-	outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-	:root {
-		color: #213547;
-		background-color: #ffffff;
+@layer base {
+	body {
+		@apply bg-black text-white m-0 p-0 overflow-hidden w-screen h-screen antialiased selection:bg-signal-cyan/30;
+		font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
 	}
-	a:hover {
-		color: #747bff;
+}
+
+@layer utilities {
+	.glass-obsidian {
+		/* The Material - Transparency controlled by CSS variables */
+		background: linear-gradient(
+			180deg,
+			rgba(30, 30, 35, var(--glass-opacity-top, 0.35)) 0%,
+			rgba(10, 10, 12, var(--glass-opacity-bottom, 0.45)) 100%
+		) !important;
+		backdrop-filter: blur(var(--glass-blur, 40px)) saturate(var(--glass-saturate, 180%));
+		-webkit-backdrop-filter: blur(var(--glass-blur, 40px)) saturate(var(--glass-saturate, 180%));
+
+		/* The Rim Light (Meniscus) */
+		box-shadow:
+			inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
+			inset 0 -1px 0 0 rgba(0, 0, 0, 0.5),
+			0 10px 40px -10px rgba(0, 0, 0, 0.8);
+
+		/* Texture */
+		position: relative;
+		overflow: hidden;
 	}
-	button {
-		background-color: #f9f9f9;
+
+	.glass-obsidian::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background-image: var(--noise-pattern);
+		opacity: 0.03;
+		pointer-events: none;
+		z-index: 0;
+	}
+
+	.text-obsidian-primary {
+		@apply text-white/90 font-medium;
+	}
+
+	.text-obsidian-secondary {
+		@apply text-white/50 font-normal;
+	}
+
+	.tabular-nums {
+		font-feature-settings: 'tnum';
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* Mobile Landscape: Horizontal scroll */
+	@media (max-width: 768px) and (orientation: landscape) {
+		.landscape\:overflow-x-auto {
+			overflow-x: auto;
+		}
+		.landscape\:overflow-y-hidden {
+			overflow-y: hidden;
+		}
+		.landscape\:flex-row {
+			flex-direction: row;
+		}
+		.landscape\:h-full {
+			height: 100%;
+		}
+		.landscape\:w-80 {
+			width: 20rem; /* 320px */
+		}
 	}
 }

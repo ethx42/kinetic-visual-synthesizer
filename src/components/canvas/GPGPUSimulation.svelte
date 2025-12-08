@@ -25,4 +25,3 @@
 
 <!-- This component manages GPGPU state and exposes it via context -->
 <slot />
-
