@@ -13,11 +13,8 @@ import type {
 	WorkerAdapterConfig
 } from '../../application/interfaces/IVisionWorkerAdapter';
 
-// Import worker URL for classic worker instantiation
-// Using ?worker&url to get the bundled worker URL, then creating a classic worker
-// This is required because MediaPipe uses importScripts() which only works in classic workers
-// @ts-expect-error - Vite worker URL import
-import visionWorkerUrl from '../worker/vision.worker?worker&url';
+// @ts-expect-error - Import worker using Vite's query suffix
+import VisionWorker from '../worker/vision.worker?worker';
 
 /**
  * Worker message types
@@ -91,8 +88,7 @@ export class VisionWorkerAdapter implements IVisionWorkerAdapter {
 	private async doInitialize(config?: WorkerAdapterConfig): Promise<void> {
 		const mergedConfig = { ...DEFAULT_CONFIG, ...config };
 
-		// Create a classic worker (not ES module) to support MediaPipe's importScripts() calls
-		this.worker = new Worker(visionWorkerUrl, { type: 'classic' });
+		this.worker = new VisionWorker();
 
 		return new Promise<void>((resolve, reject) => {
 			if (!this.worker) {
