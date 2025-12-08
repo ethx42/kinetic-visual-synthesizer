@@ -1,15 +1,15 @@
 /**
  * Glitch Post-Processing Vertex Shader
- * Fullscreen quad pass-through
- * Will be implemented in Milestone 5
+ * Fullscreen quad pass-through for post-processing effects
  */
 
-attribute vec2 aPosition;
+attribute vec2 position;
+attribute vec2 uv;
 varying vec2 vUv;
 
 void main() {
-	vUv = aPosition * 0.5 + 0.5;
-	gl_Position = vec4(aPosition, 0.0, 1.0);
+	vUv = uv;
+	gl_Position = vec4(position, 0.0, 1.0);
 }
 
 
