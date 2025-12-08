@@ -6,11 +6,12 @@
  */
 
 import { VisionUseCase } from '../application/use-cases/VisionUseCase';
-import { VisionWorkerAdapter } from '../infrastructure/adapters/VisionWorkerAdapter';
+import { MediaPipeMainThreadAdapter } from '../infrastructure/adapters/MediaPipeMainThreadAdapter';
 import { FrameCaptureAdapter } from '../infrastructure/adapters/FrameCaptureAdapter';
 import type { VisionFrame } from '../domain/entities/VisionFrame';
 import type { SignalAnalysisResult } from '../domain/services/SignalAnalyzer';
 import type { VisionUseCaseConfig } from '../application/interfaces/IVisionUseCase';
+import type { IVisionWorkerAdapter } from '../application/interfaces/IVisionWorkerAdapter';
 
 /**
  * Vision facade callbacks for Svelte component integration
@@ -37,7 +38,7 @@ export interface VisionFacadeConfig extends VisionUseCaseConfig {
  */
 export class VisionFacade {
 	private useCase: VisionUseCase | null = null;
-	private workerAdapter: VisionWorkerAdapter | null = null;
+	private mediaPipeAdapter: IVisionWorkerAdapter | null = null;
 	private frameCaptureAdapter: FrameCaptureAdapter | null = null;
 	private initialized = false;
 	private config: VisionFacadeConfig;
@@ -61,10 +62,10 @@ export class VisionFacade {
 			return;
 		}
 
-		this.workerAdapter = new VisionWorkerAdapter();
+		this.mediaPipeAdapter = new MediaPipeMainThreadAdapter();
 		this.frameCaptureAdapter = new FrameCaptureAdapter();
 
-		this.useCase = new VisionUseCase(this.frameCaptureAdapter, this.workerAdapter);
+		this.useCase = new VisionUseCase(this.frameCaptureAdapter, this.mediaPipeAdapter);
 
 		await this.useCase.initialize({
 			smoothstepMin: this.config.smoothstepMin,
@@ -137,7 +138,7 @@ export class VisionFacade {
 	dispose(): void {
 		this.useCase?.dispose();
 		this.useCase = null;
-		this.workerAdapter = null;
+		this.mediaPipeAdapter = null;
 		this.frameCaptureAdapter = null;
 		this.initialized = false;
 	}

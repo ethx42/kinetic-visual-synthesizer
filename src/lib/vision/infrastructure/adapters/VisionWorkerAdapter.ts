@@ -86,8 +86,7 @@ export class VisionWorkerAdapter implements IVisionWorkerAdapter {
 		const mergedConfig = { ...DEFAULT_CONFIG, ...config };
 
 		this.worker = new Worker(
-			new URL('../worker/vision.worker.ts', import.meta.url),
-			{ type: 'module' }
+			new URL('../worker/vision.worker.ts', import.meta.url)
 		);
 
 		return new Promise<void>((resolve, reject) => {
