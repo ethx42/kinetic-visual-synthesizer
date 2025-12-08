@@ -6,6 +6,11 @@ import { fileURLToPath, URL } from 'node:url';
 // https://vite.dev/config/
 export default defineConfig({
 	plugins: [svelte(), glsl()],
+	worker: {
+		// Build worker bundles as classic scripts (IIFE) instead of ES modules
+		// Required for MediaPipe which uses importScripts() internally
+		format: 'iife'
+	},
 	resolve: {
 		alias: {
 			$lib: fileURLToPath(new URL('./src/lib', import.meta.url)),

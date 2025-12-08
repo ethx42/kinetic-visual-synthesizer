@@ -2,59 +2,83 @@
 	/**
 	 * Vision System Component
 	 * Integrates MediaPipe hand tracking with the particle system
-	 * Phase 3.1-3.3: Complete vision integration
+	 * Clean Architecture: Uses VisionFacade for simplified API
+	 *
+	 * MediaPipe now runs 100% in Web Worker for optimal performance
 	 */
 	import { onMount, onDestroy } from 'svelte';
-	import { VisionManager } from '$lib/vision/VisionManager';
-	import { TensionCalculator } from '$lib/vision/TensionCalculator';
+	import { VisionFacade } from '$lib/vision/presentation/VisionFacade';
+	import { Hand } from '$lib/vision/domain/entities/Hand';
 	import { tension } from '$lib/stores/tension';
 	import { updateHandTracking, resetHandTracking } from '$lib/stores/handTracking';
 	import { calibration } from '$lib/stores/calibration';
 	import { videoStream } from '$lib/stores/videoStream';
 	import { cameraEnabled } from '$lib/stores/settings';
+	import type { HandLandmarks } from '$lib/vision/types';
 
-	let visionManager: VisionManager | null = $state(null);
-	let tensionCalculator: TensionCalculator;
+	let visionFacade: VisionFacade | null = $state(null);
 	let isInitialized = $state(false);
 	let error: string | null = $state(null);
 	let showDebugVideo = $state(false);
+	let currentStream: MediaStream | null = $state(null);
 	let calibrationUnsubscribe: (() => void) | null = null;
+
+	/**
+	 * Convert domain Hand entities to legacy HandLandmarks format
+	 * for backward compatibility with existing stores
+	 */
+	function convertToLegacyFormat(hands: Hand[]): HandLandmarks[] {
+		return hands.map((hand) => ({
+			landmarks: hand.landmarks.map((lm) => ({
+				x: lm.x,
+				y: lm.y,
+				z: lm.z
+			})),
+			confidence: hand.confidence
+		}));
+	}
 
 	// Initialize vision system
 	async function initializeVision() {
-		if (!visionManager) {
-			visionManager = new VisionManager();
+		if (visionFacade) {
+			return;
 		}
 
 		try {
-			await visionManager.initialize(undefined, {
+			// Create facade with calibration settings
+			visionFacade = new VisionFacade({
+				smoothstepMin: $calibration.smoothstepMin,
+				smoothstepMax: $calibration.smoothstepMax,
+				smoothingAlpha: $calibration.smoothingAlpha,
+				targetFps: 30
+			});
+
+			await visionFacade.initialize();
+
+			// Start processing with callbacks
+			visionFacade.start({
 				onInitialized: () => {
 					isInitialized = true;
 					error = null;
-					console.log('[VisionSystem] MediaPipe initialized');
+					console.log('[VisionSystem] MediaPipe Worker initialized');
 				},
-				onLandmarks: (hands) => {
-					// Update hand tracking store
-					updateHandTracking(hands);
-
-					// Calculate tension
-					const calculatedTension = tensionCalculator.calculate(hands);
+				onFrame: (frame) => {
+					// Convert domain entities to legacy format for stores
+					const legacyHands = convertToLegacyFormat([...frame.hands]);
+					updateHandTracking(legacyHands);
+				},
+				onTension: (calculatedTension) => {
 					tension.set(calculatedTension);
 				},
 				onError: (err) => {
 					error = err;
 					console.error('[VisionSystem]', err);
+				},
+				onStreamReady: (stream) => {
+					currentStream = stream;
+					videoStream.set(stream);
 				}
 			});
-
-			// Expose video stream for other components
-			const stream = visionManager.getVideoStream();
-			if (stream) {
-				videoStream.set(stream);
-			}
-
-			// Start processing
-			visionManager.start();
 		} catch (err) {
 			error = err instanceof Error ? err.message : String(err);
 			console.error('[VisionSystem] Initialization failed:', err);
@@ -63,10 +87,10 @@
 
 	// Stop vision system
 	function stopVision() {
-		if (visionManager) {
-			visionManager.stop();
-			visionManager.dispose();
-			visionManager = null;
+		if (visionFacade) {
+			visionFacade.dispose();
+			visionFacade = null;
+			currentStream = null;
 			videoStream.set(null);
 		}
 		resetHandTracking();
@@ -76,13 +100,14 @@
 	}
 
 	onMount(async () => {
-		// Initialize tension calculator with calibration settings
-		tensionCalculator = new TensionCalculator($calibration);
-
-		// Update calculator when calibration changes
+		// Update facade when calibration changes
 		calibrationUnsubscribe = calibration.subscribe((cal) => {
-			if (tensionCalculator) {
-				tensionCalculator.updateCalibration(cal);
+			if (visionFacade) {
+				visionFacade.updateConfig({
+					smoothstepMin: cal.smoothstepMin,
+					smoothstepMax: cal.smoothstepMax,
+					smoothingAlpha: cal.smoothingAlpha
+				});
 			}
 		});
 
@@ -96,20 +121,20 @@
 	$effect(() => {
 		if ($cameraEnabled) {
 			// Camera enabled - initialize if not already initialized
-			if (!visionManager || !isInitialized) {
+			if (!visionFacade || !isInitialized) {
 				initializeVision();
 			}
 		} else {
 			// Camera disabled - stop and cleanup completely
-			if (visionManager) {
+			if (visionFacade) {
 				stopVision();
 			}
 		}
 	});
 
 	onDestroy(() => {
-		if (visionManager) {
-			visionManager.dispose();
+		if (visionFacade) {
+			visionFacade.dispose();
 		}
 		resetHandTracking();
 		if (calibrationUnsubscribe) {
@@ -132,20 +157,16 @@
 </script>
 
 <!-- Debug Video Overlay (optional) -->
-{#if showDebugVideo && visionManager}
-	{@const videoElement = visionManager.getVideoElement()}
-	{@const stream = videoElement?.srcObject}
-	{#if videoElement && stream && stream instanceof MediaStream}
-		<div class="debug-video">
-			<video
-				srcObject={stream}
-				autoplay
-				playsinline
-				muted
-				style="width: 320px; height: 240px; border: 2px solid #00ff00;"
-			></video>
-		</div>
-	{/if}
+{#if showDebugVideo && currentStream}
+	<div class="debug-video">
+		<video
+			srcObject={currentStream}
+			autoplay
+			playsinline
+			muted
+			style="width: 320px; height: 240px; border: 2px solid #00ff00;"
+		></video>
+	</div>
 {/if}
 
 <!-- Error Display -->
