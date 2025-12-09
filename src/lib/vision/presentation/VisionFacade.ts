@@ -7,6 +7,7 @@
 
 import { VisionUseCase } from '../application/use-cases/VisionUseCase';
 import { VisionWorkerAdapter } from '../infrastructure/adapters/VisionWorkerAdapter';
+import { MediaPipeMainThreadAdapter } from '../infrastructure/adapters/MediaPipeMainThreadAdapter';
 import { FrameCaptureAdapter } from '../infrastructure/adapters/FrameCaptureAdapter';
 import type { VisionFrame } from '../domain/entities/VisionFrame';
 import type { SignalAnalysisResult } from '../domain/services/SignalAnalyzer';
@@ -56,25 +57,81 @@ export class VisionFacade {
 
 	/**
 	 * Initialize the vision system
+	 * Attempts to use VisionWorkerAdapter first, falls back to MediaPipeMainThreadAdapter
+	 * if worker initialization fails (e.g., importScripts error in dev mode)
 	 */
 	async initialize(): Promise<void> {
 		if (this.initialized) {
 			return;
 		}
 
-		this.mediaPipeAdapter = new VisionWorkerAdapter();
 		this.frameCaptureAdapter = new FrameCaptureAdapter();
 
-		this.useCase = new VisionUseCase(this.frameCaptureAdapter, this.mediaPipeAdapter);
+		// Try worker adapter first (optimal performance)
+		try {
+			this.mediaPipeAdapter = new VisionWorkerAdapter();
+			this.useCase = new VisionUseCase(this.frameCaptureAdapter, this.mediaPipeAdapter);
 
-		await this.useCase.initialize({
-			smoothstepMin: this.config.smoothstepMin,
-			smoothstepMax: this.config.smoothstepMax,
-			smoothingAlpha: this.config.smoothingAlpha,
-			targetFps: this.config.targetFps
-		});
+			await this.useCase.initialize({
+				smoothstepMin: this.config.smoothstepMin,
+				smoothstepMax: this.config.smoothstepMax,
+				smoothingAlpha: this.config.smoothingAlpha,
+				targetFps: this.config.targetFps
+			});
 
-		this.initialized = true;
+			console.log('[VisionFacade] Worker adapter initialized successfully');
+			this.initialized = true;
+		} catch (error) {
+			// Check if error is related to importScripts (worker module issue)
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			const isWorkerError =
+				errorMessage.includes('importScripts') ||
+				errorMessage.includes('Module scripts') ||
+				errorMessage.includes('Worker initialization');
+
+			if (isWorkerError) {
+				console.warn(
+					'[VisionFacade] Worker adapter failed, falling back to main thread adapter:',
+					errorMessage
+				);
+
+				// Clean up failed worker adapter
+				if (this.mediaPipeAdapter) {
+					this.mediaPipeAdapter.terminate();
+					this.mediaPipeAdapter = null;
+				}
+				if (this.useCase) {
+					this.useCase.dispose();
+					this.useCase = null;
+				}
+
+				// Fallback to main thread adapter
+				try {
+					this.mediaPipeAdapter = new MediaPipeMainThreadAdapter();
+					this.useCase = new VisionUseCase(this.frameCaptureAdapter, this.mediaPipeAdapter);
+
+					await this.useCase.initialize({
+						smoothstepMin: this.config.smoothstepMin,
+						smoothstepMax: this.config.smoothstepMax,
+						smoothingAlpha: this.config.smoothingAlpha,
+						targetFps: this.config.targetFps
+					});
+
+					console.log('[VisionFacade] Main thread adapter initialized (fallback mode)');
+					this.initialized = true;
+				} catch (fallbackError) {
+					const fallbackMessage =
+						fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+					console.error('[VisionFacade] Fallback adapter also failed:', fallbackMessage);
+					throw new Error(
+						`Both worker and main thread adapters failed. Worker: ${errorMessage}, Fallback: ${fallbackMessage}`
+					);
+				}
+			} else {
+				// Non-worker error, rethrow
+				throw error;
+			}
+		}
 	}
 
 	/**

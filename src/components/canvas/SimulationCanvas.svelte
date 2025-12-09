@@ -6,6 +6,7 @@
 	import ParticleSystem from './ParticleSystem.svelte';
 	import SimulationPass from './SimulationPass.svelte';
 	import DebugPlane from './DebugPlane.svelte';
+	import PostProcessingPass from '$lib/postprocessing/presentation/PostProcessingPass.svelte';
 	import VisionSystem from '../ui/VisionSystem.svelte';
 	import { getRotationCursor } from '$lib/ui/cursors/RotationCursor';
 
@@ -177,6 +178,8 @@
 			<SimulationPass />
 			<ParticleSystem />
 			<DebugPlane visible={showDebug} />
+						<!-- Post-Processing Pipeline (store-driven control via postProcessingState) -->
+						<PostProcessingPass />
 		</GPGPUSimulation>
 	</Canvas>
 </div>
