@@ -19,6 +19,51 @@ export const noiseStrength = persistent('kvs_noiseStrength', 8.0); // Intensity 
 export const attractorStrength = persistent('kvs_attractorStrength', 1.0);
 export const damping = persistent('kvs_damping', 0.99); // Velocity damping factor (0.0 = no damping, 1.0 = full stop)
 
+// Lorenz Attractor parameters (σ, ρ, β)
+export const lorenzSigma = persistent('kvs_lorenzSigma', 10.0);
+export const lorenzRho = persistent('kvs_lorenzRho', 28.0);
+export const lorenzBeta = persistent('kvs_lorenzBeta', 8.0 / 3.0);
+
+// Aizawa Attractor parameters (a, b, c, d, e, f)
+export const aizawaA = persistent('kvs_aizawaA', 0.95);
+export const aizawaB = persistent('kvs_aizawaB', 0.7);
+export const aizawaC = persistent('kvs_aizawaC', 0.6);
+export const aizawaD = persistent('kvs_aizawaD', 3.5);
+export const aizawaE = persistent('kvs_aizawaE', 0.25);
+export const aizawaF = persistent('kvs_aizawaF', 0.1);
+
+// Rössler Attractor parameters (a, b, c)
+export const roesslerA = persistent('kvs_roesslerA', 0.2);
+export const roesslerB = persistent('kvs_roesslerB', 0.2);
+export const roesslerC = persistent('kvs_roesslerC', 5.7);
+
+// Chen Attractor parameters (a, b, c)
+export const chenA = persistent('kvs_chenA', 35.0);
+export const chenB = persistent('kvs_chenB', 3.0);
+export const chenC = persistent('kvs_chenC', 28.0);
+
+// Thomas Attractor parameter (b)
+export const thomasB = persistent('kvs_thomasB', 0.19);
+
+// Gravity Grid parameters
+export const gravityGridSpacing = persistent('kvs_gravityGridSpacing', 2.0); // Spacing between grid points
+export const gravityGridStrength = persistent('kvs_gravityGridStrength', 5.0); // Strength of gravitational attraction
+export const gravityGridDecay = persistent('kvs_gravityGridDecay', 2.0); // Distance decay exponent (2.0 = inverse square law)
+export const gravityGridOffsetX = persistent('kvs_gravityGridOffsetX', 0.0); // Grid center X offset
+export const gravityGridOffsetY = persistent('kvs_gravityGridOffsetY', 0.0); // Grid center Y offset
+export const gravityGridOffsetZ = persistent('kvs_gravityGridOffsetZ', 0.0); // Grid center Z offset
+export const gravityGridDimensions = persistent('kvs_gravityGridDimensions', 10.0); // Approximate grid dimensions
+
+// Halvorsen Attractor parameter
+export const halvorsenAlpha = persistent('kvs_halvorsenAlpha', 1.4); // α parameter (typically 1.4 or 1.89)
+
+// Four-Wing Attractor parameters (a, b, c, d, k)
+export const fourWingA = persistent('kvs_fourWingA', 4.0);
+export const fourWingB = persistent('kvs_fourWingB', 6.0);
+export const fourWingC = persistent('kvs_fourWingC', 10.0);
+export const fourWingD = persistent('kvs_fourWingD', 5.0);
+export const fourWingK = persistent('kvs_fourWingK', 1.0);
+
 // Current position texture reference (updated by SimulationPass)
 // This allows ParticleSystem to reactively update its texture reference
 import type { Texture } from 'three';

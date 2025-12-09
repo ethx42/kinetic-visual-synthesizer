@@ -16,7 +16,13 @@
 	const fieldTypeOptions = [
 		{ value: 0, label: 'Curl Noise' },
 		{ value: 1, label: 'Lorenz Attractor' },
-		{ value: 2, label: 'Aizawa Attractor' }
+		{ value: 2, label: 'Aizawa Attractor' },
+		{ value: 3, label: 'Rössler Attractor' },
+		{ value: 4, label: 'Chen Attractor' },
+		{ value: 5, label: "Thomas' Cyclically Symmetric" },
+		{ value: 6, label: 'Gravity Grid' },
+		{ value: 7, label: 'Halvorsen Attractor' },
+		{ value: 8, label: 'Four-Wing Attractor' }
 	];
 
 	// Convert store values to slider arrays (0-100 normalized)
