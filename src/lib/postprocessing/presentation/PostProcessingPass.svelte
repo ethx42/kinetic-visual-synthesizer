@@ -82,9 +82,9 @@
 			};
 
 			(window as any).__postProcessingDebug = {
+				// Global controls
 				enable: () => {
 					setPostProcessingEnabled(true);
-					updateEffectState('glitch', { enabled: true });
 					console.log('✅ Post-processing ENABLED');
 				},
 				disable: () => {
@@ -95,36 +95,321 @@
 					const current = getCurrentState();
 					const newState = !current?.enabled;
 					setPostProcessingEnabled(newState);
-					if (newState) {
-						updateEffectState('glitch', { enabled: true });
-					}
 					console.log(newState ? '✅ Post-processing ENABLED' : '❌ Post-processing DISABLED');
 				},
-				setIntensity: (intensity: number) => {
+				// Enable/disable all effects at once
+				enableAll: () => {
+					setPostProcessingEnabled(true);
+					updateEffectState('glitch', { enabled: true });
+					updateEffectState('bloom', { enabled: true });
+					updateEffectState('chromatic-aberration', { enabled: true });
+					updateEffectState('vignette', { enabled: true });
+					updateEffectState('color-grading', { enabled: true });
+					updateEffectState('film-grain', { enabled: true });
+					console.log('✅ All effects ENABLED');
+				},
+				disableAll: () => {
+					updateEffectState('glitch', { enabled: false });
+					updateEffectState('bloom', { enabled: false });
+					updateEffectState('chromatic-aberration', { enabled: false });
+					updateEffectState('vignette', { enabled: false });
+					updateEffectState('color-grading', { enabled: false });
+					updateEffectState('film-grain', { enabled: false });
+					console.log('❌ All effects DISABLED');
+				},
+				// Effect controls - each effect can be enabled/disabled independently
+				enableEffect: (effectType: string) => {
+					updateEffectState(effectType as any, { enabled: true });
+					console.log(`✅ ${effectType} ENABLED`);
+				},
+				disableEffect: (effectType: string) => {
+					updateEffectState(effectType as any, { enabled: false });
+					console.log(`❌ ${effectType} DISABLED`);
+				},
+				toggleEffect: (effectType: string) => {
+					const current = getCurrentState();
+					if (!current) return;
+					const effectKeyMap: Record<string, keyof typeof current.effects> = {
+						glitch: 'glitch',
+						bloom: 'bloom',
+						'chromatic-aberration': 'chromaticAberration',
+						vignette: 'vignette',
+						'color-grading': 'colorGrading',
+						'film-grain': 'filmGrain'
+					};
+					const key = effectKeyMap[effectType];
+					if (key && current.effects[key]) {
+						const newState = !current.effects[key].enabled;
+						updateEffectState(effectType as any, { enabled: newState });
+						console.log(newState ? `✅ ${effectType} ENABLED` : `❌ ${effectType} DISABLED`);
+					}
+				},
+				// Intensity controls
+				setIntensity: (effectType: string, intensity: number) => {
+					updateEffectState(effectType as any, {
+						intensity: Math.max(0, Math.min(1, intensity))
+					});
+					console.log(`🎚️ ${effectType} intensity set to: ${intensity}`);
+				},
+				// Glitch-specific (legacy support)
+				setGlitchIntensity: (intensity: number) => {
 					updateEffectState('glitch', { intensity: Math.max(0, Math.min(1, intensity)) });
 					console.log(`🎚️ Glitch intensity set to: ${intensity}`);
 				},
+				// Bloom controls
+				setBloomThreshold: (threshold: number) => {
+					updateEffectState('bloom', { threshold: Math.max(0, Math.min(2, threshold)) });
+					console.log(`🎚️ Bloom threshold set to: ${threshold}`);
+				},
+				setBloomRadius: (radius: number) => {
+					updateEffectState('bloom', { radius: Math.max(0.1, Math.min(5, radius)) });
+					console.log(`🎚️ Bloom radius set to: ${radius}`);
+				},
+				// Color Grading controls
+				setTemperature: (temp: number) => {
+					updateEffectState('color-grading', {
+						temperature: Math.max(-1, Math.min(1, temp))
+					});
+					console.log(`🌡️ Color temperature set to: ${temp}`);
+				},
+				setContrast: (contrast: number) => {
+					updateEffectState('color-grading', {
+						contrast: Math.max(-1, Math.min(1, contrast))
+					});
+					console.log(`📊 Contrast set to: ${contrast}`);
+				},
+				setSaturation: (saturation: number) => {
+					updateEffectState('color-grading', {
+						saturation: Math.max(-1, Math.min(1, saturation))
+					});
+					console.log(`🎨 Saturation set to: ${saturation}`);
+				},
+				setBrightness: (brightness: number) => {
+					updateEffectState('color-grading', {
+						brightness: Math.max(-1, Math.min(1, brightness))
+					});
+					console.log(`💡 Brightness set to: ${brightness}`);
+				},
+				// Status
 				status: () => {
 					const state = getCurrentState();
+					const pipeline = (facade as any)?._pipeline || null;
+					const effects = pipeline ? Array.from(pipeline.effects || []) : [];
+
 					console.log('📊 Post-Processing Status:', {
 						enabled: state?.enabled,
-						glitchEnabled: state?.effects?.glitch?.enabled,
-						glitchIntensity: state?.effects?.glitch?.intensity,
 						facadeInitialized: facade?.isInitialized(),
 						facadeHasError: facade?.hasEncounteredError(),
-						fullState: state
+						pipelineEffects: effects.map((e: any) => ({
+							name: e.name,
+							enabled: e.enabled,
+							intensity: e.intensity
+						})),
+						storeEffects: {
+							glitch: {
+								enabled: state?.effects?.glitch?.enabled,
+								intensity: state?.effects?.glitch?.intensity
+							},
+							bloom: {
+								enabled: state?.effects?.bloom?.enabled,
+								intensity: state?.effects?.bloom?.intensity,
+								threshold: state?.effects?.bloom?.threshold,
+								radius: state?.effects?.bloom?.radius
+							},
+							chromaticAberration: {
+								enabled: state?.effects?.chromaticAberration?.enabled,
+								intensity: state?.effects?.chromaticAberration?.intensity
+							},
+							vignette: {
+								enabled: state?.effects?.vignette?.enabled,
+								intensity: state?.effects?.vignette?.intensity
+							},
+							colorGrading: {
+								enabled: state?.effects?.colorGrading?.enabled,
+								intensity: state?.effects?.colorGrading?.intensity
+							},
+							filmGrain: {
+								enabled: state?.effects?.filmGrain?.enabled,
+								intensity: state?.effects?.filmGrain?.intensity
+							}
+						}
 					});
-					// Also show localStorage for comparison
-					const stored = localStorage.getItem('kvs_postProcessingState');
-					console.log('💾 localStorage:', stored ? JSON.parse(stored) : 'null');
+				},
+				// Quick test presets
+				testBloom: () => {
+					setPostProcessingEnabled(true);
+					updateEffectState('bloom', {
+						enabled: true,
+						intensity: 2.0,
+						threshold: 0.1,
+						radius: 5.0
+					});
+					console.log('✨ Bloom test activated with VERY aggressive settings');
+					console.log('   Threshold: 0.1 (muy bajo - debería bloom casi todo)');
+					console.log('   Intensity: 2.0 (muy alto)');
+					console.log('   Radius: 5.0 (muy difuso)');
+					setTimeout(() => {
+						const debug = (window as any).__postProcessingDebug;
+						if (debug && debug.status) {
+							debug.status();
+						}
+					}, 500);
+				},
+				testVignette: () => {
+					setPostProcessingEnabled(true);
+					updateEffectState('vignette', {
+						enabled: true,
+						intensity: 1.0,
+						radius: 0.4,
+						feather: 0.2
+					});
+					console.log('✨ Vignette test activated with VERY aggressive settings');
+					console.log('   Intensity: 1.0 (máximo - bordes muy oscuros)');
+					console.log('   Radius: 0.4 (bajo - efecto más cercano al centro)');
+					console.log('   Feather: 0.2 (bajo - transición más abrupta)');
+					setTimeout(() => {
+						const debug = (window as any).__postProcessingDebug;
+						if (debug && debug.status) {
+							debug.status();
+						}
+					}, 500);
+				},
+				testChromaticAberration: () => {
+					setPostProcessingEnabled(true);
+					updateEffectState('chromatic-aberration', {
+						enabled: true,
+						intensity: 1.0,
+						offset: 0.1
+					});
+					console.log('✨ Chromatic Aberration test activated with VERY aggressive settings');
+					console.log('   Intensity: 1.0 (máximo - separación de color muy visible)');
+					console.log('   Offset: 0.1 (muy alto - efecto muy pronunciado)');
+					setTimeout(() => {
+						const debug = (window as any).__postProcessingDebug;
+						if (debug && debug.status) {
+							debug.status();
+						}
+					}, 500);
+				},
+				testColorGrading: () => {
+					setPostProcessingEnabled(true);
+					updateEffectState('color-grading', {
+						enabled: true,
+						intensity: 1.0,
+						temperature: 0.8,
+						contrast: 0.8,
+						saturation: 0.6,
+						brightness: 0.3
+					});
+					console.log('✨ Color Grading test activated with VERY aggressive settings');
+					console.log('   Temperature: 0.8 (muy cálido/naranja)');
+					console.log('   Contrast: 0.8 (muy alto - colores muy contrastados)');
+					console.log('   Saturation: 0.6 (muy saturado - colores vibrantes)');
+					console.log('   Brightness: 0.3 (más brillante)');
+					setTimeout(() => {
+						const debug = (window as any).__postProcessingDebug;
+						if (debug && debug.status) {
+							debug.status();
+						}
+					}, 500);
+				},
+				testFilmGrain: () => {
+					setPostProcessingEnabled(true);
+					updateEffectState('film-grain', { enabled: true, intensity: 1.0 });
+					console.log('✨ Film Grain test activated with VERY aggressive settings');
+					console.log('   Intensity: 1.0 (máximo - grano muy visible)');
+					setTimeout(() => {
+						const debug = (window as any).__postProcessingDebug;
+						if (debug && debug.status) {
+							debug.status();
+						}
+					}, 500);
+				},
+				testGlitch: () => {
+					setPostProcessingEnabled(true);
+					updateEffectState('glitch', { enabled: true, intensity: 1.0 });
+					console.log('✨ Glitch test activated with VERY aggressive settings');
+					console.log('   Intensity: 1.0 (máximo - efecto glitch muy pronunciado)');
+					setTimeout(() => {
+						const debug = (window as any).__postProcessingDebug;
+						if (debug && debug.status) {
+							debug.status();
+						}
+					}, 500);
+				},
+				testAll: () => {
+					setPostProcessingEnabled(true);
+					updateEffectState('bloom', { enabled: true, intensity: 1.2, threshold: 0.3 });
+					updateEffectState('vignette', { enabled: true, intensity: 0.6 });
+					updateEffectState('color-grading', { enabled: true, temperature: 0.2, contrast: 0.15 });
+					updateEffectState('film-grain', { enabled: true, intensity: 0.25 });
+					console.log('🎬 Cinematic preset activated!');
+				},
+				// Help
+				help: () => {
+					console.log('🔧 Post-processing debug functions:');
+					console.log('');
+					console.log('Global controls:');
+					console.log('  .enable()                    - Enable all post-processing');
+					console.log(
+						'  .disable()                   - Disable all post-processing (completely off)'
+					);
+					console.log('  .toggle()                    - Toggle global on/off');
+					console.log('  .enableAll()                 - Enable all effects at once');
+					console.log(
+						'  .disableAll()                 - Disable all effects (but keep post-processing on)'
+					);
+					console.log('');
+					console.log('Effect controls:');
+					console.log('  .enableEffect("bloom")       - Enable specific effect');
+					console.log('  .disableEffect("bloom")      - Disable specific effect');
+					console.log('  .toggleEffect("bloom")       - Toggle specific effect');
+					console.log('  .setIntensity("bloom", 0.8)  - Set effect intensity (0-1)');
+					console.log('');
+					console.log('Available effects:');
+					console.log('  - "glitch"');
+					console.log('  - "bloom"');
+					console.log('  - "chromatic-aberration"');
+					console.log('  - "vignette"');
+					console.log('  - "color-grading"');
+					console.log('  - "film-grain"');
+					console.log('');
+					console.log('Special controls:');
+					console.log('  .setBloomThreshold(0.2)     - Set bloom threshold (lower = more bloom)');
+					console.log('  .setBloomRadius(4.0)        - Set bloom blur radius');
+					console.log('  .setTemperature(0.3)        - Set color temperature (-1 cool to 1 warm)');
+					console.log('  .setContrast(0.2)            - Set contrast (-1 to 1)');
+					console.log('  .setSaturation(0.1)         - Set saturation (-1 to 1)');
+					console.log('  .setBrightness(0.05)        - Set brightness (-1 to 1)');
+					console.log('');
+					console.log('Quick presets (all with aggressive settings):');
+					console.log('  .testBloom()                 - Test bloom with VERY aggressive settings');
+					console.log(
+						'  .testVignette()              - Test vignette with VERY aggressive settings'
+					);
+					console.log(
+						'  .testChromaticAberration()   - Test chromatic aberration with VERY aggressive settings'
+					);
+					console.log(
+						'  .testColorGrading()          - Test color grading with VERY aggressive settings'
+					);
+					console.log(
+						'  .testFilmGrain()             - Test film grain with VERY aggressive settings'
+					);
+					console.log('  .testGlitch()                - Test glitch with VERY aggressive settings');
+					console.log(
+						'  .testAll()                   - Activate cinematic preset (moderate settings)'
+					);
+					console.log('');
+					console.log('Info:');
+					console.log('  .status()                    - Show current status');
+					console.log('  .help()                      - Show this help');
+					console.log('');
+					console.log('📖 Full documentation: See docs/POST_PROCESSING_TESTING.md');
 				}
 			};
-			console.log('🔧 Post-processing debug functions available:');
-			console.log('  window.__postProcessingDebug.enable()   - Enable post-processing');
-			console.log('  window.__postProcessingDebug.disable()  - Disable post-processing');
-			console.log('  window.__postProcessingDebug.toggle()   - Toggle on/off');
-			console.log('  window.__postProcessingDebug.setIntensity(0.8) - Set glitch intensity (0-1)');
-			console.log('  window.__postProcessingDebug.status()    - Show current status');
+			console.log('🔧 Post-processing debug functions available!');
+			console.log('  Type: window.__postProcessingDebug.help() for full documentation');
 		}
 	});
 

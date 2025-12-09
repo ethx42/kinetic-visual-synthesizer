@@ -6,11 +6,22 @@
 
 import type { IPostProcessingEffect, EffectPreset } from '../entities/PostProcessingEffect';
 import { GlitchEffect } from '../effects/GlitchEffect';
+import { BloomEffect } from '../effects/BloomEffect';
+import { ChromaticAberrationEffect } from '../effects/ChromaticAberrationEffect';
+import { VignetteEffect } from '../effects/VignetteEffect';
+import { ColorGradingEffect } from '../effects/ColorGradingEffect';
+import { FilmGrainEffect } from '../effects/FilmGrainEffect';
 
 /**
  * Available effect types that can be created by the factory
  */
-export type EffectType = 'glitch' | 'bloom' | 'chromatic-aberration';
+export type EffectType =
+	| 'glitch'
+	| 'bloom'
+	| 'chromatic-aberration'
+	| 'vignette'
+	| 'color-grading'
+	| 'film-grain';
 
 /**
  * Effect configuration for preset creation
@@ -47,13 +58,15 @@ export class EffectFactory {
 			case 'glitch':
 				return new GlitchEffect();
 			case 'bloom':
-				console.warn('BloomEffect not yet implemented, returning GlitchEffect as fallback');
-				return new GlitchEffect();
+				return new BloomEffect();
 			case 'chromatic-aberration':
-				console.warn(
-					'ChromaticAberrationEffect not yet implemented, returning GlitchEffect as fallback'
-				);
-				return new GlitchEffect();
+				return new ChromaticAberrationEffect();
+			case 'vignette':
+				return new VignetteEffect();
+			case 'color-grading':
+				return new ColorGradingEffect();
+			case 'film-grain':
+				return new FilmGrainEffect();
 			default:
 				throw new Error(`Unknown effect type: ${type}`);
 		}
@@ -83,7 +96,7 @@ export class EffectFactory {
 	 * @returns Array of available effect type names
 	 */
 	static getAvailableEffects(): EffectType[] {
-		return ['glitch', 'bloom', 'chromatic-aberration'];
+		return ['glitch', 'bloom', 'chromatic-aberration', 'vignette', 'color-grading', 'film-grain'];
 	}
 
 	/**

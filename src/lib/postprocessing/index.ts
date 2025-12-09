@@ -14,6 +14,11 @@ export { BasePostProcessingEffect } from './domain/entities/PostProcessingEffect
 
 // Domain Layer - Effects
 export { GlitchEffect } from './domain/effects/GlitchEffect';
+export { BloomEffect } from './domain/effects/BloomEffect';
+export { ChromaticAberrationEffect } from './domain/effects/ChromaticAberrationEffect';
+export { VignetteEffect } from './domain/effects/VignetteEffect';
+export { ColorGradingEffect } from './domain/effects/ColorGradingEffect';
+export { FilmGrainEffect } from './domain/effects/FilmGrainEffect';
 
 // Domain Layer - Factories
 export { EffectFactory, type EffectType } from './domain/factories/EffectFactory';

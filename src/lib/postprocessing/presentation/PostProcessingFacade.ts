@@ -107,17 +107,35 @@ export class PostProcessingFacade {
 		this.width = config.width;
 		this.height = config.height;
 
-		// Get initial state synchronously
-		let initialState: PostProcessingState | undefined;
-		const tmpUnsub = this.stateStore.subscribe((s) => {
-			initialState = s;
-		});
-		tmpUnsub();
+		// Get initial state synchronously using Svelte's get() helper
+		// The store wrapper automatically merges with defaults
+		this.state = get(this.stateStore);
 
-		if (!initialState) {
-			throw new Error('[PostProcessingFacade] Failed to read initial state from store');
+		// Defensive check: ensure all effects exist (safety net)
+		if (!this.state.effects.vignette) {
+			this.state.effects.vignette = {
+				enabled: false,
+				intensity: 0.5,
+				radius: 0.75,
+				feather: 0.5
+			};
 		}
-		this.state = initialState;
+		if (!this.state.effects.colorGrading) {
+			this.state.effects.colorGrading = {
+				enabled: false,
+				intensity: 1.0,
+				temperature: 0.0,
+				contrast: 0.0,
+				saturation: 0.0,
+				brightness: 0.0
+			};
+		}
+		if (!this.state.effects.filmGrain) {
+			this.state.effects.filmGrain = {
+				enabled: false,
+				intensity: 0.3
+			};
+		}
 
 		// Start with passthrough strategy (zero overhead when disabled)
 		this.currentRenderStrategy = this.createPassthroughStrategy();
@@ -185,7 +203,14 @@ export class PostProcessingFacade {
 	 */
 	private hasAnyEffectEnabled(): boolean {
 		const { effects } = this.state;
-		return effects.glitch.enabled || effects.bloom.enabled || effects.chromaticAberration.enabled;
+		return (
+			effects.glitch.enabled ||
+			effects.bloom.enabled ||
+			effects.chromaticAberration.enabled ||
+			effects.vignette.enabled ||
+			effects.colorGrading.enabled ||
+			effects.filmGrain.enabled
+		);
 	}
 
 	/**
@@ -223,19 +248,153 @@ export class PostProcessingFacade {
 	/**
 	 * Synchronize effect states with store values
 	 * Called when store updates while pipeline is active
+	 * Also adds new effects dynamically if they're enabled but not in pipeline
 	 */
 	private syncEffects(): void {
 		if (!this.pipeline) return;
 
-		const { glitch } = this.state.effects;
-		const glitchEffect = this.pipeline.getEffect('GlitchEffect');
+		const { glitch, bloom, chromaticAberration, vignette, colorGrading, filmGrain } =
+			this.state.effects;
 
+		// Sync or add Glitch
+		let glitchEffect = this.pipeline.getEffect('GlitchEffect');
+		if (glitch.enabled && !glitchEffect) {
+			// Effect not in pipeline but should be enabled - add it
+			glitchEffect = EffectFactory.createEffect('glitch');
+			glitchEffect.intensity = glitch.intensity;
+			this.pipeline.addEffect(glitchEffect);
+		}
 		if (glitchEffect) {
 			glitchEffect.enabled = glitch.enabled && this.state.enabled;
 			glitchEffect.intensity = glitch.intensity;
+		} else if (!glitch.enabled) {
+			// Effect in pipeline but should be disabled - remove it
+			this.pipeline.removeEffect('GlitchEffect');
 		}
 
-		// Future: sync bloom and chromatic aberration effects when implemented
+		// Sync or add Bloom
+		let bloomEffect = this.pipeline.getEffect('BloomEffect');
+		if (bloom.enabled && !bloomEffect) {
+			bloomEffect = EffectFactory.createEffect('bloom');
+			bloomEffect.intensity = bloom.intensity;
+			if ('threshold' in bloomEffect) {
+				(bloomEffect as any).threshold = bloom.threshold;
+			}
+			if ('radius' in bloomEffect) {
+				(bloomEffect as any).radius = bloom.radius;
+			}
+			this.pipeline.addEffect(bloomEffect);
+		}
+		if (bloomEffect) {
+			bloomEffect.enabled = bloom.enabled && this.state.enabled;
+			bloomEffect.intensity = bloom.intensity;
+			if ('threshold' in bloomEffect) {
+				(bloomEffect as any).threshold = bloom.threshold;
+			}
+			if ('radius' in bloomEffect) {
+				(bloomEffect as any).radius = bloom.radius;
+			}
+		} else if (!bloom.enabled) {
+			this.pipeline.removeEffect('BloomEffect');
+		}
+
+		// Sync or add Chromatic Aberration
+		let caEffect = this.pipeline.getEffect('ChromaticAberrationEffect');
+		if (chromaticAberration.enabled && !caEffect) {
+			caEffect = EffectFactory.createEffect('chromatic-aberration');
+			caEffect.intensity = chromaticAberration.intensity;
+			if ('offset' in caEffect) {
+				(caEffect as any).offset = chromaticAberration.offset;
+			}
+			this.pipeline.addEffect(caEffect);
+		}
+		if (caEffect) {
+			caEffect.enabled = chromaticAberration.enabled && this.state.enabled;
+			caEffect.intensity = chromaticAberration.intensity;
+			if ('offset' in caEffect) {
+				(caEffect as any).offset = chromaticAberration.offset;
+			}
+		} else if (!chromaticAberration.enabled) {
+			this.pipeline.removeEffect('ChromaticAberrationEffect');
+		}
+
+		// Sync or add Vignette
+		let vignetteEffect = this.pipeline.getEffect('VignetteEffect');
+		if (vignette.enabled && !vignetteEffect) {
+			vignetteEffect = EffectFactory.createEffect('vignette');
+			vignetteEffect.intensity = vignette.intensity;
+			if ('radius' in vignetteEffect) {
+				(vignetteEffect as any).radius = vignette.radius;
+			}
+			if ('feather' in vignetteEffect) {
+				(vignetteEffect as any).feather = vignette.feather;
+			}
+			this.pipeline.addEffect(vignetteEffect);
+		}
+		if (vignetteEffect) {
+			vignetteEffect.enabled = vignette.enabled && this.state.enabled;
+			vignetteEffect.intensity = vignette.intensity;
+			if ('radius' in vignetteEffect) {
+				(vignetteEffect as any).radius = vignette.radius;
+			}
+			if ('feather' in vignetteEffect) {
+				(vignetteEffect as any).feather = vignette.feather;
+			}
+		} else if (!vignette.enabled) {
+			this.pipeline.removeEffect('VignetteEffect');
+		}
+
+		// Sync or add Color Grading
+		let colorGradingEffect = this.pipeline.getEffect('ColorGradingEffect');
+		if (colorGrading.enabled && !colorGradingEffect) {
+			colorGradingEffect = EffectFactory.createEffect('color-grading');
+			colorGradingEffect.intensity = colorGrading.intensity;
+			if ('temperature' in colorGradingEffect) {
+				(colorGradingEffect as any).temperature = colorGrading.temperature;
+			}
+			if ('contrast' in colorGradingEffect) {
+				(colorGradingEffect as any).contrast = colorGrading.contrast;
+			}
+			if ('saturation' in colorGradingEffect) {
+				(colorGradingEffect as any).saturation = colorGrading.saturation;
+			}
+			if ('brightness' in colorGradingEffect) {
+				(colorGradingEffect as any).brightness = colorGrading.brightness;
+			}
+			this.pipeline.addEffect(colorGradingEffect);
+		}
+		if (colorGradingEffect) {
+			colorGradingEffect.enabled = colorGrading.enabled && this.state.enabled;
+			colorGradingEffect.intensity = colorGrading.intensity;
+			if ('temperature' in colorGradingEffect) {
+				(colorGradingEffect as any).temperature = colorGrading.temperature;
+			}
+			if ('contrast' in colorGradingEffect) {
+				(colorGradingEffect as any).contrast = colorGrading.contrast;
+			}
+			if ('saturation' in colorGradingEffect) {
+				(colorGradingEffect as any).saturation = colorGrading.saturation;
+			}
+			if ('brightness' in colorGradingEffect) {
+				(colorGradingEffect as any).brightness = colorGrading.brightness;
+			}
+		} else if (!colorGrading.enabled) {
+			this.pipeline.removeEffect('ColorGradingEffect');
+		}
+
+		// Sync or add Film Grain
+		let filmGrainEffect = this.pipeline.getEffect('FilmGrainEffect');
+		if (filmGrain.enabled && !filmGrainEffect) {
+			filmGrainEffect = EffectFactory.createEffect('film-grain');
+			filmGrainEffect.intensity = filmGrain.intensity;
+			this.pipeline.addEffect(filmGrainEffect);
+		}
+		if (filmGrainEffect) {
+			filmGrainEffect.enabled = filmGrain.enabled && this.state.enabled;
+			filmGrainEffect.intensity = filmGrain.intensity;
+		} else if (!filmGrain.enabled) {
+			this.pipeline.removeEffect('FilmGrainEffect');
+		}
 	}
 
 	/**
@@ -245,8 +404,10 @@ export class PostProcessingFacade {
 	 */
 	private createEffectsFromState(): IPostProcessingEffect[] {
 		const effects = [];
-		const { glitch, bloom, chromaticAberration } = this.state.effects;
+		const { glitch, bloom, chromaticAberration, vignette, colorGrading, filmGrain } =
+			this.state.effects;
 
+		// Glitch effect
 		if (glitch.enabled) {
 			const glitchEffect = EffectFactory.createEffect('glitch');
 			if (glitchEffect) {
@@ -255,20 +416,75 @@ export class PostProcessingFacade {
 			}
 		}
 
-		// Future: Add bloom and chromatic aberration when implemented
+		// Bloom effect
 		if (bloom.enabled) {
 			const bloomEffect = EffectFactory.createEffect('bloom');
 			if (bloomEffect) {
 				bloomEffect.intensity = bloom.intensity;
+				if ('threshold' in bloomEffect) {
+					(bloomEffect as any).threshold = bloom.threshold;
+				}
+				if ('radius' in bloomEffect) {
+					(bloomEffect as any).radius = bloom.radius;
+				}
 				effects.push(bloomEffect);
 			}
 		}
 
+		// Chromatic Aberration effect
 		if (chromaticAberration.enabled) {
 			const caEffect = EffectFactory.createEffect('chromatic-aberration');
 			if (caEffect) {
 				caEffect.intensity = chromaticAberration.intensity;
+				if ('offset' in caEffect) {
+					(caEffect as any).offset = chromaticAberration.offset;
+				}
 				effects.push(caEffect);
+			}
+		}
+
+		// Vignette effect
+		if (vignette.enabled) {
+			const vignetteEffect = EffectFactory.createEffect('vignette');
+			if (vignetteEffect) {
+				vignetteEffect.intensity = vignette.intensity;
+				if ('radius' in vignetteEffect) {
+					(vignetteEffect as any).radius = vignette.radius;
+				}
+				if ('feather' in vignetteEffect) {
+					(vignetteEffect as any).feather = vignette.feather;
+				}
+				effects.push(vignetteEffect);
+			}
+		}
+
+		// Color Grading effect
+		if (colorGrading.enabled) {
+			const colorGradingEffect = EffectFactory.createEffect('color-grading');
+			if (colorGradingEffect) {
+				colorGradingEffect.intensity = colorGrading.intensity;
+				if ('temperature' in colorGradingEffect) {
+					(colorGradingEffect as any).temperature = colorGrading.temperature;
+				}
+				if ('contrast' in colorGradingEffect) {
+					(colorGradingEffect as any).contrast = colorGrading.contrast;
+				}
+				if ('saturation' in colorGradingEffect) {
+					(colorGradingEffect as any).saturation = colorGrading.saturation;
+				}
+				if ('brightness' in colorGradingEffect) {
+					(colorGradingEffect as any).brightness = colorGrading.brightness;
+				}
+				effects.push(colorGradingEffect);
+			}
+		}
+
+		// Film Grain effect
+		if (filmGrain.enabled) {
+			const filmGrainEffect = EffectFactory.createEffect('film-grain');
+			if (filmGrainEffect) {
+				filmGrainEffect.intensity = filmGrain.intensity;
+				effects.push(filmGrainEffect);
 			}
 		}
 
