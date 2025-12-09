@@ -1,27 +1,35 @@
 <script lang="ts">
+	/**
+	 * PostProcessingPass Component
+	 * Thin integration layer for post-processing pipeline with Threlte
+	 *
+	 * This component:
+	 * - Creates and manages the PostProcessingFacade
+	 * - Connects to the postProcessingState store for reactive control
+	 * - Handles resize events
+	 * - Integrates with Threlte's render loop via useTask
+	 *
+	 * All effect management is delegated to the facade, which subscribes
+	 * to the store for dynamic, user-controlled effect parameters.
+	 */
 	import { onMount, onDestroy } from 'svelte';
 	import { useThrelte, useTask } from '@threlte/core';
-	import { WebGLRenderTarget, RGBAFormat, LinearFilter, ClampToEdgeWrapping } from 'three';
-	import { PostProcessingPipeline } from '../application/PostProcessingPipeline';
-	import { EffectFactory } from '../domain/factories/EffectFactory';
-	import type { EffectPreset } from '../domain/entities/PostProcessingEffect';
+	import { postProcessingState } from '$lib/stores/postProcessing';
+	import {
+		createPostProcessingFacade,
+		type PostProcessingFacade
+	} from './PostProcessingFacade';
 	import { handTracking } from '$lib/stores/handTracking';
-
-	interface Props {
-		preset?: EffectPreset;
-		enabled?: boolean;
-	}
-
-	let { preset = 'glitch-only', enabled = true }: Props = $props();
 
 	const { renderer, scene, camera, size } = useThrelte();
 
-	let pipeline: PostProcessingPipeline | null = null;
-	let sceneRenderTarget: WebGLRenderTarget | null = null;
+	let facade: PostProcessingFacade | null = null;
 	let startTime = performance.now();
 	let signalLost = false;
 
-	handTracking.subscribe((state) => {
+	// Subscribe to hand tracking for signal loss detection
+	// This is kept separate from the facade to maintain single responsibility
+	const unsubscribeHandTracking = handTracking.subscribe((state) => {
 		signalLost = state.signalLost;
 	});
 
@@ -34,82 +42,56 @@
 		const width = size.current.width || window.innerWidth;
 		const height = size.current.height || window.innerHeight;
 
-		sceneRenderTarget = new WebGLRenderTarget(width, height, {
-			format: RGBAFormat,
-			minFilter: LinearFilter,
-			magFilter: LinearFilter,
-			wrapS: ClampToEdgeWrapping,
-			wrapT: ClampToEdgeWrapping,
-			depthBuffer: true,
-			stencilBuffer: false
-		});
-
-		pipeline = new PostProcessingPipeline();
-
-		const effects = EffectFactory.createFromPreset(preset);
-		for (const effect of effects) {
-			pipeline.addEffect(effect);
+		try {
+			facade = createPostProcessingFacade({
+				renderer,
+				state: postProcessingState,
+				width,
+				height
+			});
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			console.error('[PostProcessingPass] Failed to create facade:', errorMessage);
+			// Facade creation failed - scene will render normally without post-processing
 		}
-
-		pipeline.initialize(renderer, { width, height });
 
 		startTime = performance.now();
 	});
 
+	// Handle resize events
 	$effect(() => {
-		if (pipeline && size.current) {
-			const width = size.current.width || window.innerWidth;
-			const height = size.current.height || window.innerHeight;
-			pipeline.resize(width, height);
+		if (!facade || !size.current) return;
 
-			if (sceneRenderTarget) {
-				sceneRenderTarget.setSize(width, height);
-			}
-		}
+		const width = size.current.width || window.innerWidth;
+		const height = size.current.height || window.innerHeight;
+		facade.resize(width, height);
 	});
 
-	$effect(() => {
-		if (pipeline) {
-			const glitchEffect = pipeline.getEffect('GlitchEffect');
-			if (glitchEffect) {
-				glitchEffect.enabled = enabled;
-			}
-		}
-	});
-
-	useTask('post-processing-pass', (_delta) => {
-		if (!pipeline || !renderer || !scene || !camera.current || !sceneRenderTarget || !enabled) {
+	// Render loop integration via Threlte's useTask
+	useTask('post-processing-pass', () => {
+		if (!facade || !renderer || !scene || !camera.current) {
 			return;
 		}
-
-		const currentRenderTarget = renderer.getRenderTarget();
-
-		renderer.setRenderTarget(sceneRenderTarget);
-		renderer.render(scene, camera.current);
 
 		const currentTime = (performance.now() - startTime) / 1000;
 		const width = size.current.width || window.innerWidth;
 		const height = size.current.height || window.innerHeight;
 
-		pipeline.render(sceneRenderTarget, {
-			uTime: currentTime,
-			uSignalLost: signalLost,
-			uIntensity: 0.5,
-			uResolution: [width, height]
+		facade.render({
+			scene,
+			camera: camera.current,
+			timeSeconds: currentTime,
+			resolution: [width, height],
+			signalLost
 		});
-
-		renderer.setRenderTarget(currentRenderTarget);
 	});
 
 	onDestroy(() => {
-		if (pipeline) {
-			pipeline.dispose();
-			pipeline = null;
-		}
+		unsubscribeHandTracking();
 
-		if (sceneRenderTarget) {
-			sceneRenderTarget.dispose();
-			sceneRenderTarget = null;
+		if (facade) {
+			facade.dispose();
+			facade = null;
 		}
 	});
 </script>

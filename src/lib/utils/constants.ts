@@ -26,3 +26,48 @@ export const TEXTURE = {
 	DEFAULT_SIZE: 1024, // Default texture size for GPGPU
 	PARTICLE_COUNT_MAX: 1_000_000
 } as const;
+
+/**
+ * Post-Processing Constants
+ * Default values and configuration for post-processing effects
+ */
+export const POST_PROCESSING = {
+	/** localStorage key for persisting state */
+	STORAGE_KEY: 'kvs_postProcessingState',
+
+	/** Default effect intensities */
+	DEFAULT_INTENSITY: 0.5,
+	MAX_INTENSITY: 2.0,
+	MIN_INTENSITY: 0.0,
+
+	/** Glitch effect defaults */
+	GLITCH: {
+		CHROMATIC_ABERRATION: 1.0,
+		SCANLINE_DENSITY: 1.0,
+		NOISE_STRENGTH: 0.5,
+		SIGNAL_LOSS_BOOST: 0.5
+	},
+
+	/** Bloom effect defaults (for future implementation) */
+	BLOOM: {
+		THRESHOLD: 1.0,
+		RADIUS: 0.5
+	},
+
+	/** Chromatic aberration effect defaults (for future implementation) */
+	CHROMATIC_ABERRATION: {
+		OFFSET: 1.0
+	},
+
+	/** Performance thresholds */
+	PERFORMANCE: {
+		/** Maximum time budget per effect in milliseconds */
+		MAX_EFFECT_TIME_MS: 2.0,
+		/** Quality scale factors for different quality levels */
+		QUALITY_SCALE: {
+			low: 0.5,
+			medium: 0.75,
+			high: 1.0
+		}
+	}
+} as const;

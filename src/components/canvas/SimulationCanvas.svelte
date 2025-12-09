@@ -178,8 +178,8 @@
 			<SimulationPass />
 			<ParticleSystem />
 			<DebugPlane visible={showDebug} />
-			<!-- Post-Processing Pipeline -->
-			<PostProcessingPass preset="glitch-only" enabled={true} />
+						<!-- Post-Processing Pipeline (store-driven control via postProcessingState) -->
+						<PostProcessingPass />
 		</GPGPUSimulation>
 	</Canvas>
 </div>
