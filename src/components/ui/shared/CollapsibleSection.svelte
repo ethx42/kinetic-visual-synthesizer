@@ -3,7 +3,15 @@
 	 * CollapsibleSection Component
 	 * Reusable collapsible section wrapper
 	 */
-	let { title, expanded = $bindable(false) } = $props();
+	let {
+		title,
+		expanded = $bindable(false),
+		children
+	} = $props<{
+		title: string;
+		expanded?: boolean;
+		children?: import('svelte').Snippet;
+	}>();
 </script>
 
 <div class="section">
@@ -13,7 +21,7 @@
 	</button>
 	{#if expanded}
 		<div class="section-content">
-			<slot />
+			{@render children?.()}
 		</div>
 	{/if}
 </div>

@@ -159,13 +159,12 @@ export function useGPGPU(config: GPGPUConfig): UseGPGPUResult {
 		textureType = isWebGL2 ? FloatType : HalfFloatType;
 
 		if (!isWebGL2) {
-			console.warn(
-				'WebGL2 not available. Using HalfFloatType with reduced precision. Some artifacts may occur.'
-			);
+			// WebGL2 not available - using HalfFloatType fallback
+			// This is expected on some devices, not an error
 		}
 	} catch (error) {
+		ErrorHandler.handleGPGPUError(error, 'useGPGPU.initialize');
 		const errorMessage = ErrorHandler.getErrorMessage(error);
-		console.error('[GPGPU] Failed to initialize WebGL context:', errorMessage);
 		throw new Error(`GPGPU initialization failed: ${errorMessage}`);
 	}
 

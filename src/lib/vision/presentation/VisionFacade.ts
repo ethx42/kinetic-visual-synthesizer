@@ -13,6 +13,7 @@ import type { VisionFrame } from '../domain/entities/VisionFrame';
 import type { SignalAnalysisResult } from '../domain/services/SignalAnalyzer';
 import type { VisionUseCaseConfig } from '../application/interfaces/IVisionUseCase';
 import type { IVisionWorkerAdapter } from '../application/interfaces/IVisionWorkerAdapter';
+import { ErrorHandler } from '$lib/utils/errorHandler';
 
 /**
  * Vision facade callbacks for Svelte component integration
@@ -79,7 +80,7 @@ export class VisionFacade {
 				targetFps: this.config.targetFps
 			});
 
-			console.log('[VisionFacade] Worker adapter initialized successfully');
+			// Worker adapter initialized successfully (no error to log)
 			this.initialized = true;
 		} catch (error) {
 			// Check if error is related to importScripts (worker module issue)
@@ -90,10 +91,7 @@ export class VisionFacade {
 				errorMessage.includes('Worker initialization');
 
 			if (isWorkerError) {
-				console.warn(
-					'[VisionFacade] Worker adapter failed, falling back to main thread adapter:',
-					errorMessage
-				);
+				ErrorHandler.handleVisionError(error, 'VisionFacade.initialize (fallback to main thread)');
 
 				// Clean up failed worker adapter
 				if (this.mediaPipeAdapter) {
@@ -117,12 +115,15 @@ export class VisionFacade {
 						targetFps: this.config.targetFps
 					});
 
-					console.log('[VisionFacade] Main thread adapter initialized (fallback mode)');
+					// Main thread adapter initialized (fallback mode) - no error to log
 					this.initialized = true;
 				} catch (fallbackError) {
+					ErrorHandler.handleVisionError(
+						fallbackError,
+						'VisionFacade.initialize (fallback failed)'
+					);
 					const fallbackMessage =
 						fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
-					console.error('[VisionFacade] Fallback adapter also failed:', fallbackMessage);
 					throw new Error(
 						`Both worker and main thread adapters failed. Worker: ${errorMessage}, Fallback: ${fallbackMessage}`
 					);

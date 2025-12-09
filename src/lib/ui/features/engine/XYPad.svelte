@@ -163,8 +163,9 @@
 
 	// Update canvas when values change externally
 	$effect(() => {
-		normalizedX;
-		normalizedY;
+		// Track reactive dependencies
+		const _x = normalizedX;
+		const _y = normalizedY;
 		draw();
 	});
 
@@ -232,9 +233,11 @@
 		bind:this={container}
 		class="relative w-full bg-black/20 rounded-lg border border-white/10 overflow-hidden touch-none cursor-crosshair"
 		style="touch-action: none; aspect-ratio: 1 / 1; width: 100%;"
-		role="application"
+		role="slider"
 		aria-label="Vector Control Pad"
 		aria-describedby="xy-pad-description"
+		aria-valuemin="0"
+		aria-valuemax="1"
 		tabindex="0"
 		onpointerdown={handlePointerDown}
 		onpointermove={handlePointerMove}

@@ -8,6 +8,7 @@
 	import DebugPlane from './DebugPlane.svelte';
 	import PostProcessingPass from '$lib/postprocessing/presentation/PostProcessingPass.svelte';
 	import VisionSystem from '../ui/VisionSystem.svelte';
+	import FPSTracker from './FPSTracker.svelte';
 	import { getRotationCursor } from '$lib/ui/cursors/RotationCursor';
 
 	let webgl2Supported = $state(false);
@@ -173,13 +174,16 @@
 		</T.PerspectiveCamera>
 		<T.AmbientLight intensity={0.5} />
 
+		<!-- FPS Tracker (updates telemetry store) -->
+		<FPSTracker />
+
 		<!-- GPGPU Simulation System -->
 		<GPGPUSimulation>
 			<SimulationPass />
 			<ParticleSystem />
 			<DebugPlane visible={showDebug} />
-						<!-- Post-Processing Pipeline (store-driven control via postProcessingState) -->
-						<PostProcessingPass />
+			<!-- Post-Processing Pipeline (store-driven control via postProcessingState) -->
+			<PostProcessingPass />
 		</GPGPUSimulation>
 	</Canvas>
 </div>
