@@ -11,7 +11,8 @@
 		Mesh,
 		Sphere,
 		Box3,
-		Vector3
+		Vector3,
+		Vector2
 	} from 'three';
 	import { tension } from '$lib/stores/tension';
 	import { handTracking } from '$lib/stores/handTracking';
@@ -23,7 +24,36 @@
 		attractorStrength,
 		damping,
 		currentPositionTexture,
-		currentVelocityTexture
+		currentVelocityTexture,
+		lorenzSigma,
+		lorenzRho,
+		lorenzBeta,
+		aizawaA,
+		aizawaB,
+		aizawaC,
+		aizawaD,
+		aizawaE,
+		aizawaF,
+		roesslerA,
+		roesslerB,
+		roesslerC,
+		chenA,
+		chenB,
+		chenC,
+		thomasB,
+		gravityGridSpacing,
+		gravityGridStrength,
+		gravityGridDecay,
+		gravityGridOffsetX,
+		gravityGridOffsetY,
+		gravityGridOffsetZ,
+		gravityGridDimensions,
+		halvorsenAlpha,
+		fourWingA,
+		fourWingB,
+		fourWingC,
+		fourWingD,
+		fourWingK
 	} from '$lib/stores/settings';
 	import { SIMULATION, SHADER } from '$lib/utils/constants';
 	import simVert from '$shaders/simulation/sim.vert.glsl?raw';
@@ -94,11 +124,33 @@
 				uNoiseSpeed: { value: 0.5 },
 				uNoiseStrength: { value: 8.0 },
 				uPositionScale: { value: SHADER.POSITION_SCALE_DEFAULT }, // Position scale for curl noise
-				uFieldType: { value: 0.0 }, // 0 = CURL_NOISE, 1 = LORENZ, 2 = AIZAWA
+				uFieldType: { value: 0.0 }, // 0 = CURL_NOISE, 1 = LORENZ, 2 = AIZAWA, 3 = RÖSSLER, 4 = CHEN, 5 = THOMAS, 6 = GRAVITY_GRID, 7 = HALVORSEN, 8 = FOUR_WING
 				uAttractorStrength: { value: 0.5 },
 				uDamping: { value: 0.01 }, // 0.01 = 1% damping per frame (very smooth)
 				uBoundarySize: { value: SHADER.BOUNDARY_DEFAULT }, // Boundary size for particle wrapping
-				uOutputMode: { value: 0.0 } // 0 = position, 1 = velocity
+				uOutputMode: { value: 0.0 }, // 0 = position, 1 = velocity
+				// Lorenz parameters (σ, ρ, β)
+				uLorenzParams: { value: new Vector3(10.0, 28.0, 8.0 / 3.0) },
+				// Aizawa parameters (a, b, c) and (d, e, f)
+				uAizawaParams1: { value: new Vector3(0.95, 0.7, 0.6) },
+				uAizawaParams2: { value: new Vector3(3.5, 0.25, 0.1) },
+				// Rössler parameters (a, b, c)
+				uRoesslerParams: { value: new Vector3(0.2, 0.2, 5.7) },
+				// Chen parameters (a, b, c)
+				uChenParams: { value: new Vector3(35.0, 3.0, 28.0) },
+				// Thomas parameter (b)
+				uThomasParam: { value: 0.19 },
+				// Gravity Grid parameters
+				uGravityGridSpacing: { value: 2.0 },
+				uGravityGridStrength: { value: 5.0 },
+				uGravityGridDecay: { value: 2.0 },
+				uGravityGridOffset: { value: new Vector3(0.0, 0.0, 0.0) },
+				uGravityGridDimensions: { value: 10.0 },
+				// Halvorsen Attractor parameter
+				uHalvorsenAlpha: { value: 1.4 },
+				// Four-Wing Attractor parameters
+				uFourWingParams1: { value: new Vector3(4.0, 6.0, 10.0) }, // a, b, c
+				uFourWingParams2: { value: new Vector2(5.0, 1.0) } // d, k
 			}
 		});
 
@@ -195,6 +247,26 @@
 		material.uniforms.uDamping.value = $damping;
 		material.uniforms.uPositionTexture.value = positionRead.texture;
 		material.uniforms.uVelocityTexture.value = velocityRead.texture;
+
+		// Update attractor-specific parameters
+		material.uniforms.uLorenzParams.value.set($lorenzSigma, $lorenzRho, $lorenzBeta);
+		material.uniforms.uAizawaParams1.value.set($aizawaA, $aizawaB, $aizawaC);
+		material.uniforms.uAizawaParams2.value.set($aizawaD, $aizawaE, $aizawaF);
+		material.uniforms.uRoesslerParams.value.set($roesslerA, $roesslerB, $roesslerC);
+		material.uniforms.uChenParams.value.set($chenA, $chenB, $chenC);
+		material.uniforms.uThomasParam.value = $thomasB;
+		material.uniforms.uGravityGridSpacing.value = $gravityGridSpacing;
+		material.uniforms.uGravityGridStrength.value = $gravityGridStrength;
+		material.uniforms.uGravityGridDecay.value = $gravityGridDecay;
+		material.uniforms.uGravityGridOffset.value.set(
+			$gravityGridOffsetX,
+			$gravityGridOffsetY,
+			$gravityGridOffsetZ
+		);
+		material.uniforms.uGravityGridDimensions.value = $gravityGridDimensions;
+		material.uniforms.uHalvorsenAlpha.value = $halvorsenAlpha;
+		material.uniforms.uFourWingParams1.value.set($fourWingA, $fourWingB, $fourWingC);
+		material.uniforms.uFourWingParams2.value.set($fourWingD, $fourWingK);
 
 		// Phase 2.2: Update position and velocity
 		// Pass 1: Update position
