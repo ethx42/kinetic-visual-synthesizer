@@ -3,6 +3,7 @@
 	import Shell from '$components/ui/shell/Shell.svelte';
 	import KitchenSink from '$components/ui/KitchenSink.svelte';
 	import UnifiedControlPanel from '$components/ui/UnifiedControlPanel.svelte';
+	import { PerformanceMonitor } from '$lib/performance';
 </script>
 
 <main>
@@ -11,6 +12,8 @@
 	<Shell>
 		<KitchenSink />
 	</Shell>
+	<!-- Performance Fallback System - Monitors FPS and adapts automatically -->
+	<PerformanceMonitor />
 </main>
 
 <style>

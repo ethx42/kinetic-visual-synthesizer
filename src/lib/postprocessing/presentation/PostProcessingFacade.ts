@@ -27,6 +27,7 @@ import type { EffectUniforms } from '../domain/entities/PostProcessingEffect';
 import type { IPostProcessingEffect } from '../domain/entities/PostProcessingEffect';
 import type { PostProcessingState, GlitchEffectState } from '$lib/stores/postProcessing';
 import { POST_PROCESSING } from '$lib/utils/constants';
+import { ErrorHandler } from '$lib/utils/errorHandler';
 
 /**
  * Configuration for creating a PostProcessingFacade
@@ -183,8 +184,7 @@ export class PostProcessingFacade {
 			try {
 				this.initializePipeline();
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : String(error);
-				console.error('[PostProcessingFacade] Pipeline initialization failed:', errorMessage);
+				ErrorHandler.handleError(error, 'PostProcessingFacade.handleStateChange');
 				this.hasError = true;
 				this.disposePipeline();
 				this.currentRenderStrategy = this.createPassthroughStrategy();
@@ -555,8 +555,7 @@ export class PostProcessingFacade {
 				// The pipeline's last effect renders to null (screen)
 				this.pipeline.render(this.sceneRenderTarget, this.uniformsCache);
 			} catch (error) {
-				const errorMessage = error instanceof Error ? error.message : String(error);
-				console.error('[PostProcessingFacade] Pipeline render failed, falling back:', errorMessage);
+				ErrorHandler.handleError(error, 'PostProcessingFacade.render');
 				this.hasError = true;
 				this.disposePipeline();
 				this.currentRenderStrategy = this.createPassthroughStrategy();

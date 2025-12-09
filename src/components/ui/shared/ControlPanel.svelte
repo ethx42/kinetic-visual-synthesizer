@@ -10,13 +10,15 @@
 		edge,
 		visible,
 		onClose,
-		title = 'CONTROL'
+		title = 'CONTROL',
+		children
 	}: {
 		panelStyle: string;
 		edge: Edge;
 		visible: boolean;
 		onClose: () => void;
 		title?: string;
+		children?: import('svelte').Snippet;
 	} = $props();
 </script>
 
@@ -35,7 +37,7 @@
 	</div>
 
 	<div class="panel-content">
-		<slot />
+		{@render children?.()}
 	</div>
 </div>
 
