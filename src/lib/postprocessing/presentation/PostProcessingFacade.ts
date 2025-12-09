@@ -18,12 +18,7 @@
  */
 
 import type { WebGLRenderer, Scene, Camera } from 'three';
-import {
-	WebGLRenderTarget,
-	RGBAFormat,
-	LinearFilter,
-	ClampToEdgeWrapping
-} from 'three';
+import { WebGLRenderTarget, RGBAFormat, LinearFilter, ClampToEdgeWrapping } from 'three';
 import type { Readable, Unsubscriber } from 'svelte/store';
 import { PostProcessingPipeline } from '../application/PostProcessingPipeline';
 import { EffectFactory } from '../domain/factories/EffectFactory';
@@ -144,7 +139,6 @@ export class PostProcessingFacade {
 		// Global disable: free resources, fall back to passthrough
 		if (!this.state.enabled) {
 			if (this.initialized) {
-				console.log('[PostProcessingFacade] Disabling - disposing pipeline');
 				this.disposePipeline();
 			}
 			this.currentRenderStrategy = this.createPassthroughStrategy();
@@ -167,7 +161,6 @@ export class PostProcessingFacade {
 		if (!this.initialized && !this.hasError) {
 			try {
 				this.initializePipeline();
-				console.log('[PostProcessingFacade] Pipeline initialized successfully');
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : String(error);
 				console.error('[PostProcessingFacade] Pipeline initialization failed:', errorMessage);
@@ -321,15 +314,20 @@ export class PostProcessingFacade {
 			// Store current render target to restore later
 			const currentRenderTarget = this.renderer.getRenderTarget();
 
-			// Render scene to our render target
+			// CRITICAL: When using stage: 'after', Threlte already rendered to screen
+			// We need to render the scene again to our render target, then apply effects
+			// Note: This means we render twice, but it's necessary for post-processing
+			// Render scene to our render target (this captures what we want to process)
 			this.renderer.setRenderTarget(this.sceneRenderTarget);
+			this.renderer.clear(); // Clear the render target
 			this.renderer.render(scene, camera);
 
 			// Update uniforms cache (reuse object to avoid allocations)
 			this.updateUniformsCache(timeSeconds, signalLost, resolution);
 
 			try {
-				// Apply post-processing effects
+				// Apply post-processing effects (this will render to screen via pipeline.render)
+				// The pipeline's last effect renders to null (screen)
 				this.pipeline.render(this.sceneRenderTarget, this.uniformsCache);
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : String(error);
@@ -344,8 +342,13 @@ export class PostProcessingFacade {
 				return;
 			}
 
-			// Restore previous render target
-			this.renderer.setRenderTarget(currentRenderTarget);
+			// CRITICAL: Don't restore the previous render target if it was null (screen)
+			// If we restore null, Threlte might clear the screen on the next frame
+			// Instead, leave it as null so our post-processed result stays visible
+			// Only restore if there was a non-null render target
+			if (currentRenderTarget !== null) {
+				this.renderer.setRenderTarget(currentRenderTarget);
+			}
 		};
 	}
 

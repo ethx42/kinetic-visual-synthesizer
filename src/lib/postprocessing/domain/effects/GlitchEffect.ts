@@ -110,6 +110,10 @@ export class GlitchEffect extends BasePostProcessingEffect {
 		this.material.uniforms.uInputTexture.value = inputTarget.texture;
 
 		renderer.setRenderTarget(outputTarget);
+		// Clear before rendering to ensure clean output
+		if (outputTarget === null) {
+			renderer.clear();
+		}
 		renderer.render(this._scene, this._camera);
 	}
 
