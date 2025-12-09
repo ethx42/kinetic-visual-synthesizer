@@ -20,10 +20,13 @@
 import type { WebGLRenderer, Scene, Camera } from 'three';
 import { WebGLRenderTarget, RGBAFormat, LinearFilter, ClampToEdgeWrapping } from 'three';
 import type { Readable, Unsubscriber } from 'svelte/store';
+import { get } from 'svelte/store';
 import { PostProcessingPipeline } from '../application/PostProcessingPipeline';
 import { EffectFactory } from '../domain/factories/EffectFactory';
 import type { EffectUniforms } from '../domain/entities/PostProcessingEffect';
+import type { IPostProcessingEffect } from '../domain/entities/PostProcessingEffect';
 import type { PostProcessingState, GlitchEffectState } from '$lib/stores/postProcessing';
+import { POST_PROCESSING } from '$lib/utils/constants';
 
 /**
  * Configuration for creating a PostProcessingFacade
@@ -190,8 +193,13 @@ export class PostProcessingFacade {
 	 * Creates render targets and effects based on current state
 	 */
 	private initializePipeline(): void {
-		// Create scene render target
-		this.sceneRenderTarget = this.createSceneRenderTarget(this.width, this.height);
+		// Apply quality preset scaling to render target resolution
+		const qualityScale = POST_PROCESSING.PERFORMANCE.QUALITY_SCALE[this.state.quality];
+		const effectiveWidth = Math.floor(this.width * qualityScale);
+		const effectiveHeight = Math.floor(this.height * qualityScale);
+
+		// Create scene render target with quality-scaled resolution
+		this.sceneRenderTarget = this.createSceneRenderTarget(effectiveWidth, effectiveHeight);
 
 		// Create pipeline
 		this.pipeline = new PostProcessingPipeline();
@@ -202,10 +210,10 @@ export class PostProcessingFacade {
 			this.pipeline.addEffect(effect);
 		}
 
-		// Initialize pipeline
+		// Initialize pipeline with quality-scaled resolution (reuse calculated values)
 		this.pipeline.initialize(this.renderer, {
-			width: this.width,
-			height: this.height
+			width: effectiveWidth,
+			height: effectiveHeight
 		});
 
 		this.initialized = true;
@@ -233,8 +241,9 @@ export class PostProcessingFacade {
 	/**
 	 * Create effects based on current store state
 	 * Uses EffectFactory for effect instantiation
+	 * @returns Array of initialized post-processing effects
 	 */
-	private createEffectsFromState() {
+	private createEffectsFromState(): IPostProcessingEffect[] {
 		const effects = [];
 		const { glitch, bloom, chromaticAberration } = this.state.effects;
 
@@ -374,13 +383,18 @@ export class PostProcessingFacade {
 	 * Calculate effective intensity including signal loss boost
 	 * @param glitchState - Current glitch effect state
 	 * @param signalLost - Whether signal is lost
+	 * @returns Clamped intensity value within valid range
 	 */
 	private calculateEffectiveIntensity(glitchState: GlitchEffectState, signalLost: boolean): number {
-		let intensity = glitchState.intensity;
-		if (signalLost) {
-			intensity += glitchState.signalLossBoost;
-		}
-		return Math.min(intensity, 2.0); // Cap at max intensity
+		const baseIntensity = glitchState.intensity;
+		const boost = signalLost ? glitchState.signalLossBoost : 0;
+		const totalIntensity = baseIntensity + boost;
+
+		// Clamp to valid range using constants
+		return Math.max(
+			POST_PROCESSING.MIN_INTENSITY,
+			Math.min(totalIntensity, POST_PROCESSING.MAX_INTENSITY)
+		);
 	}
 
 	/**
@@ -400,6 +414,7 @@ export class PostProcessingFacade {
 
 	/**
 	 * Resize the pipeline buffers
+	 * Applies quality preset scaling to the resolution
 	 * @param width - New width
 	 * @param height - New height
 	 */
@@ -407,12 +422,17 @@ export class PostProcessingFacade {
 		this.width = width;
 		this.height = height;
 
+		// Apply quality preset scaling
+		const qualityScale = POST_PROCESSING.PERFORMANCE.QUALITY_SCALE[this.state.quality];
+		const effectiveWidth = Math.floor(width * qualityScale);
+		const effectiveHeight = Math.floor(height * qualityScale);
+
 		if (this.sceneRenderTarget) {
-			this.sceneRenderTarget.setSize(width, height);
+			this.sceneRenderTarget.setSize(effectiveWidth, effectiveHeight);
 		}
 
 		if (this.pipeline) {
-			this.pipeline.resize(width, height);
+			this.pipeline.resize(effectiveWidth, effectiveHeight);
 		}
 	}
 
